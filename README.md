@@ -1,108 +1,105 @@
 # Bang Motion
 
-Bang Motion is an AI agent skill for creating animated videos with HTML, CSS,
-and GSAP. Projects use Bang Motion's motion rules and starters to create a
-playable `index.html` that feels like a video rather than a slide deck.
+Bang Motion is an agent skill and a local review studio for making animated
+videos with HTML, CSS, and GSAP. Choose the lightweight skill workflow or the
+approval-gated Studio workflow below. Both produce a playable `index.html`.
 
-Works with Codex, Claude Code, Gemini CLI, Cursor, and other coding agents.
+## Choose how to work
 
-## Quick start
+| | Skill-only | Studio + Render |
+|---|---|---|
+| Best for | Ask an agent to make a video directly | Review script and storyboard in a browser before animation |
+| Setup | Install or clone the skill | Run the local Studio; install render tools only when needed |
+| Approval | Review in the agent conversation | Persistent project state and review URLs |
+| Output | `index.html` and any assets | `index.html`, assets, review snapshots, optional MP4 |
 
-Install the skill in your coding agent, then ask it for a video. Include the
-topic, audience, length, language, aspect ratio, and any style or voice-over
-preferences. The agent will read `SKILL.md` and use the matching starter.
+### 1. Skill-only — lightweight
 
-For a review-first workflow, start Bang Motion Studio:
+Install this repository as a skill for Codex:
 
 ```sh
+git clone https://github.com/aulilkez/bang-motion.git ~/.codex/skills/bang-motion
+```
+
+For Claude Code, Gemini CLI, Cursor, or another agent, clone the repository
+and add it to the agent's skills or project instructions. Ask the agent to
+read `SKILL.md`, then describe the video you want. Include its topic, audience,
+duration, language, aspect ratio, style, and voice-over preference.
+
+This path does not need the Studio server, Python, or npm packages to create
+and watch an animation. The agent reviews drafts with you in the conversation;
+it does not create persistent Studio approval URLs.
+
+### 2. Studio + Render — review and export
+
+Studio stores each project locally and provides browser links for script and
+storyboard review. Animation generation is gated on approval at each stage.
+
+Check the Studio requirement, then start it:
+
+```sh
+npm run doctor:studio --prefix scripts
 npm run studio --prefix scripts
 ```
 
-Open [http://127.0.0.1:4179](http://127.0.0.1:4179), create a project, and copy
-the agent task into Codex or Claude Code. The agent prepares the script and
-returns a review URL. Approve or request changes in the browser. After script
-approval, resume the agent to prepare the storyboard; animation starts only
-after storyboard approval.
+Open [http://127.0.0.1:4179](http://127.0.0.1:4179). Create a project and give
+the generated agent task to Codex or Claude Code. The agent returns a review
+URL after preparing each draft. Approve or request changes in the browser,
+then resume the agent with the project ID.
 
-Example prompt:
+Studio itself uses Node.js 22.12 or newer and has no npm runtime dependencies.
+Its server binds to loopback and keeps project data under
+`scripts/studio/data/`; it does not need an AI API key.
 
-> Create a 120-second science video in Indonesian about why the sky is blue.
-> Use cartoon collage, 16:9, for curious teens, with voice-over and subtitles.
-
-Studio runs on this computer, saves projects under `scripts/studio/data/`, and
-does not require an AI API key. Review URLs such as
-`http://127.0.0.1:4179/projects/<project-id>/review/script` are local to this
-computer. See [the Studio guide](scripts/studio/README.md) for the agent
-commands and render handoff.
-
-## Use as an agent skill
-
-Install the Claude Code plugin with:
-
-```text
-/plugin marketplace add bangtutorial/bang-motion
-/plugin install bang-motion@bang-motion
-```
-
-For another agent, clone this repository and add `SKILL.md` to its skills or
-project instructions:
+To capture frames or render an MP4, install the optional render tools and
+check them:
 
 ```sh
-git clone https://github.com/bangtutorial/bang-motion.git
+npm ci --prefix scripts
+npm run doctor:render --prefix scripts
 ```
 
-| Agent               | Setup                                                                       |
-| ------------------- | --------------------------------------------------------------------------- |
-| Codex               | Add the repository to your skills folder, or tell Codex to read `SKILL.md`. |
-| Gemini CLI / Cursor | Add `SKILL.md` to project instructions (`GEMINI.md` or `.cursor/rules`).    |
+Frame capture needs Puppeteer and Chrome/Chromium. Set
+`PUPPETEER_EXECUTABLE_PATH` if Chrome is not detected automatically. MP4
+encoding also needs FFmpeg. These tools are only needed for rendering and
+export; they are not required to use the Studio review UI.
 
-The detailed workflow and motion rules are in [SKILL.md](SKILL.md). The
-[`references/`](references/) folder explains styles, techniques, and the
-animation architecture.
+The review server is local to this computer. For the agent handoff, approval
+URLs look like:
+
+```text
+http://127.0.0.1:4179/projects/<project-id>/review/script
+http://127.0.0.1:4179/projects/<project-id>/review/storyboard
+```
+
+See [the Studio guide](scripts/studio/README.md) for the workflow and CLI.
 
 ## Styles and starters
-
-Choose a style to guide the look; the agent should still derive colors, type,
-and assets from the project brief and brand.
 
 - **Explainers:** cartoon collage, visual journalism, white catalog, vintage
   sketch, continuous action, and cartoon stage.
 - **Openers and promos:** ten style directions, including cinematic dark,
   paper and print, retro analog, flat pop with photos, and grainy gradient.
 
-Starters are in [`assets/starters/`](assets/starters/). Keep the final HTML and
-any required assets together; the primary deliverable remains `index.html`.
+The agent chooses a starter from [`assets/starters/`](assets/starters/) and
+follows the motion and visual guidance in [`SKILL.md`](SKILL.md) and
+[`references/`](references/).
 
 ## Preview and export
 
-Open the generated `index.html` in a browser. Add `?debug=1` to scrub the
-timeline when the starter supports it.
+Open the generated `index.html` in a modern browser. Add `?debug=1` to scrub
+the timeline when the starter supports it. Frame capture uses
+`scripts/render/snap.mjs`; full frame export uses
+`scripts/render/export-frames.mjs`. FFmpeg combines exported PNG frames into
+an MP4. The browser animation may load GSAP and fonts from a CDN.
 
-To capture key frames, install the optional render dependency once:
-
-```sh
-npm install --prefix scripts
-node /path/to/bang-motion/scripts/render/snap.mjs shots 1 3.5 8 12
-```
-
-To export an MP4, start the local server from the animation project folder:
+Check a setup profile at any time:
 
 ```sh
-python /path/to/bang-motion/scripts/utilities/serve.py 5178
+npm run doctor:skill --prefix scripts
+npm run doctor:studio --prefix scripts
+npm run doctor:render --prefix scripts
 ```
-
-In a second terminal, from that same project folder:
-
-```sh
-node /path/to/bang-motion/scripts/render/export-frames.mjs
-ffmpeg -framerate 60 -i frames/f%05d.png -c:v libx264 -pix_fmt yuv420p -crf 16 -movflags +faststart output.mp4
-```
-
-`export-frames.mjs` creates PNGs; FFmpeg combines them into an MP4. Both tools
-are optional. `scripts/utilities/voiceover-pauses.html` can detect pauses in an
-audio file in the browser without an API key.
-
-Run the Studio workflow tests with `npm test --prefix scripts`.
 
 ## Repository layout
 
@@ -110,20 +107,11 @@ Run the Studio workflow tests with `npm test --prefix scripts`.
 SKILL.md                  Agent instructions and motion rules
 assets/starters/          Opener and explainer HTML starters
 references/               Animation, style, and architecture guides
-scripts/studio/            Local approval workflow and review UI
+scripts/studio/            Local approval workflow, UI, and setup checker
 scripts/render/            Frame snapshots and PNG export
 scripts/utilities/         Local server and voice-over pause tool
 scripts/ae/bridge/         After Effects asset helpers
 ```
-
-## Requirements
-
-- **To create or watch a video:** a coding agent and a modern browser. The
-  animation may load GSAP or fonts from a CDN.
-- **To run Studio:** Node.js 22.12 or newer. Studio uses Node's built-in
-  modules and does not add runtime dependencies.
-- **To capture frames or export video:** Node.js, Puppeteer, and Chrome. MP4
-  export also requires FFmpeg.
 
 ## License
 

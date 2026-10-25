@@ -6,6 +6,9 @@
   "scripts": {
     "studio": "node studio/server.mjs",
     "studio:cli": "node studio/cli.mjs",
+    "doctor:skill": "node studio/doctor.mjs skill",
+    "doctor:studio": "node studio/doctor.mjs studio",
+    "doctor:render": "node studio/doctor.mjs render",
     "test": "node studio/test/workflow.test.mjs"
   },
   "dependencies": {
