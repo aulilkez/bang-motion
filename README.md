@@ -35,7 +35,20 @@ it does not create persistent Studio approval URLs.
 Studio stores each project locally and provides browser links for script and
 storyboard review. Animation generation is gated on approval at each stage.
 
-Check the Studio requirement, then start it:
+Studio uses Python 3.10+, FastAPI, HTMX, and locally compiled Tailwind CSS.
+Set up the Python environment and browser assets once:
+
+```sh
+python3 -m venv scripts/studio/.venv
+scripts/studio/.venv/bin/pip install -r scripts/studio/requirements.txt
+npm ci --prefix scripts
+npm run studio:build --prefix scripts
+```
+
+On Windows, use `scripts\\studio\\.venv\\Scripts\\python.exe -m pip` to
+install the Python requirements.
+
+Check the setup and start Studio:
 
 ```sh
 npm run doctor:studio --prefix scripts
@@ -47,12 +60,12 @@ the generated agent task to Codex or Claude Code. The agent returns a review
 URL after preparing each draft. Approve or request changes in the browser,
 then resume the agent with the project ID.
 
-Studio itself uses Node.js 22.12 or newer and has no npm runtime dependencies.
 Its server binds to loopback and keeps project data under
 `scripts/studio/data/`; it does not need an AI API key.
 
-To capture frames or render an MP4, install the optional render tools and
-check them:
+For frame capture and MP4 export, check the optional render tools. If you
+skipped the Studio setup above, install the Node packages first with
+`npm ci --prefix scripts`.
 
 ```sh
 npm ci --prefix scripts
@@ -112,6 +125,8 @@ scripts/render/            Frame snapshots and PNG export
 scripts/utilities/         Local server and voice-over pause tool
 scripts/ae/bridge/         After Effects asset helpers
 ```
+
+Run the Studio workflow tests with `npm test --prefix scripts`.
 
 ## License
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { access } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -47,6 +48,16 @@ const nodeOk =
   (nodeVersion[0] === 22 &&
     (nodeVersion[1] > 12 || (nodeVersion[1] === 12 && nodeVersion[2] >= 0)));
 
+function studioPython() {
+  const candidates = [process.env.STUDIO_PYTHON, path.join(root, "scripts/studio/.venv/bin/python"), path.join(root, "scripts/studio/.venv/Scripts/python.exe"), "python3", "python"].filter(Boolean);
+  for (const python of candidates) {
+    if (python.includes(path.sep) && !existsSync(python)) continue;
+    const result = spawnSync(python, ["-c", "import sys; assert sys.version_info >= (3, 10); import fastapi, jinja2, uvicorn, multipart"], { stdio: "ignore" });
+    if (result.status === 0) return python;
+  }
+  return null;
+}
+
 if (profile === "skill") {
   for (const file of ["SKILL.md", "references/explainer.md", "references/techniques.md"])
     add(file, (await exists(file)) ? "ready" : "missing", "Skill content and references");
@@ -54,11 +65,14 @@ if (profile === "skill") {
     add(folder, (await exists(folder)) ? "ready" : "missing", "Starter collection");
   add("Node.js / Python / Studio server", "not required", "Needed only for optional local tools", false);
 } else if (profile === "studio") {
-  add("Node.js >= 22.12", nodeOk ? "ready" : "missing", `Found ${process.versions.node}`);
+  add("Node.js", process.versions.node ? "ready" : "missing", `Found ${process.versions.node}`);
+  const python = studioPython();
+  add("Python 3 + Studio packages", python ? "ready" : "missing", python || "Create scripts/studio/.venv and install scripts/studio/requirements.txt");
+  add("HTMX / Tailwind assets", (await exists("scripts/studio/app/static/vendor/htmx.min.js")) && (await exists("scripts/studio/app/static/css/app.css")) ? "ready" : "missing", "Run npm ci --prefix scripts, then npm run studio:build --prefix scripts");
   add(
     "Studio server and approval workflow",
-    (await exists("scripts/studio/server.mjs")) ? "ready" : "missing",
-    "Uses Node built-in modules; no npm install required to run the review UI",
+    (await exists("scripts/studio/app/main.py")) ? "ready" : "missing",
+    "FastAPI server with local persistent project storage",
   );
   add(
     "Puppeteer / Chrome / FFmpeg",

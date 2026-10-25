@@ -1,55 +1,16 @@
 #!/usr/bin/env node
-import { readFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ProjectStore } from "./store.mjs";
-
 const here = path.dirname(fileURLToPath(import.meta.url));
-const store = new ProjectStore(
-  process.env.STUDIO_DATA_DIR || path.join(here, "data"),
-);
-await store.init();
-const [command, ...args] = process.argv.slice(2);
-const help = `Bang Motion Studio local workflow\n\nCommands:\n  list\n  project <id>\n  create <brief.json>\n  begin <id> <script|storyboard|animation>\n  submit <id> <script|storyboard> <content.json>\n  quality <id> <quality-report.json>\n  status <id> <rendering|completed|failed> [message]\n  resume <id>\n\nStart the review server separately: npm run studio --prefix scripts\n`;
-const read = async (file) =>
-  JSON.parse(await readFile(path.resolve(file), "utf8"));
-const out = (value) => console.log(JSON.stringify(value, null, 2));
-try {
-  if (command === "list") out(await store.list());
-  else if (command === "project")
-    out(store.publicProject(await store.load(args[0])));
-  else if (command === "create")
-    out(store.publicProject(await store.create(await read(args[0]))));
-  else if (command === "begin")
-    out(store.publicProject(await store.begin(args[0], args[1])));
-  else if (command === "submit")
-    out(
-      store.publicProject(
-        await store.saveContent(args[0], args[1], await read(args[2])),
-      ),
-    );
-  else if (command === "quality")
-    out(
-      store.publicProject(
-        await store.saveQuality(args[0], await read(args[1])),
-      ),
-    );
-  else if (command === "status")
-    out(
-      store.publicProject(
-        await store.updateStatus(args[0], args[1], {
-          message: args.slice(2).join(" "),
-        }),
-      ),
-    );
-  else if (command === "resume")
-    out(store.publicProject(await store.resume(args[0])));
-  else {
-    console.log(help);
-    if (command && command !== "help") process.exitCode = 2;
-  }
-} catch (error) {
-  console.error(`${error.name}: ${error.message}`);
-  if (error.issues?.length) console.error(error.issues);
-  process.exitCode = 1;
-}
+const candidates = [process.env.STUDIO_PYTHON, path.join(here, ".venv", "bin", "python"), path.join(here, ".venv", "Scripts", "python.exe"), "python3", "python"].filter(Boolean);
+const python = candidates.find((candidate) => {
+  if (candidate.includes(path.sep) && !existsSync(candidate)) return false;
+  return spawnSync(candidate, ["-c", "import sys; raise SystemExit(sys.version_info < (3, 10))"], { stdio: "ignore" }).status === 0;
+});
+if (!python) { console.error("Python 3.10+ is required. Install scripts/studio/requirements.txt."); process.exit(1); }
+const child = spawn(python, [path.join(here, "cli.py"), ...process.argv.slice(2)], { stdio: "inherit", env: process.env });
+child.on("error", (error) => { console.error(error.message); process.exit(1); });
+child.on("exit", (code, signal) => { if (signal) process.kill(process.pid, signal); else process.exit(code ?? 1); });

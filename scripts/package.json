@@ -4,14 +4,19 @@
   "private": true,
   "description": "Bang Motion render tools and local interactive Studio workflow.",
   "scripts": {
-    "studio": "node studio/server.mjs",
+    "studio": "node studio/run.mjs",
     "studio:cli": "node studio/cli.mjs",
+    "studio:build": "node studio/build.mjs",
     "doctor:skill": "node studio/doctor.mjs skill",
     "doctor:studio": "node studio/doctor.mjs studio",
     "doctor:render": "node studio/doctor.mjs render",
-    "test": "node studio/test/workflow.test.mjs"
+    "test": "node studio/test.mjs"
   },
   "dependencies": {
-    "puppeteer": "^25.10.0"
+    "puppeteer": "^25.10.0",
+    "htmx.org": "^2.0.4"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
   }
 }

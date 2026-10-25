@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}Studio error{% endblock %}
+{% block content %}<section class="mx-auto max-w-2xl card p-8"><span class="badge badge-warning">{{ status_code }}</span><h1 class="mt-4 text-2xl font-semibold tracking-tight">{{ message }}</h1><p class="mt-2 text-sm text-muted-foreground">The saved project state was not changed by this request.</p><a class="btn btn-outline mt-6" href="/studio/index.html">Back to Studio</a></section>{% endblock %}

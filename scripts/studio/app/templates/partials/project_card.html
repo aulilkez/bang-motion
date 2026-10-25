@@ -1,0 +1,4 @@
+<a href="/projects/{{ project.id }}/review/script" class="group card block p-4 transition hover:border-zinc-400 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+  <div class="flex items-start justify-between gap-3"><div class="min-w-0"><h3 class="truncate font-medium tracking-tight group-hover:underline">{{ project.brief.title }}</h3><p class="mt-1 truncate font-mono text-[11px] text-muted-foreground">{{ project.id }}</p></div><span class="badge {% if 'approved' in project.status %}badge-success{% elif 'review' in project.status %}badge-warning{% else %}badge-muted{% endif %}">{{ project.status.replace('_', ' ') }}</span></div>
+  <div class="mt-4 flex items-center justify-between border-t pt-3 text-xs text-muted-foreground"><span>{{ project.brief.durationSeconds }} sec · {{ project.brief.aspectRatio }}</span><time>{{ project.updatedAt[:16].replace('T', ' ') }}</time></div>
+</a>

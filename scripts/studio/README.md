@@ -13,8 +13,18 @@ Use Studio when you want saved project state and browser-based approval gates.
 
 ## Requirements and start
 
-Studio's review UI needs Node.js 22.12 or newer. It uses Node's built-in
-modules; no `npm install` is needed to run the server. Check the setup with:
+Studio uses Python 3.10+, FastAPI for the local server, HTMX for review
+interactions, and Tailwind CSS compiled locally into a zinc-based component
+system. Set up its Python environment and build the browser assets once:
+
+```sh
+python3 -m venv scripts/studio/.venv
+scripts/studio/.venv/bin/pip install -r scripts/studio/requirements.txt
+npm ci --prefix scripts
+npm run studio:build --prefix scripts
+```
+
+Check the setup with:
 
 ```sh
 npm run doctor:studio --prefix scripts
@@ -24,7 +34,22 @@ npm run doctor:studio --prefix scripts
 npm run studio --prefix scripts
 ```
 
-Open `http://127.0.0.1:4179`. Set `STUDIO_PORT` or `STUDIO_DATA_DIR` to change the local port or data location. The server refuses non-loopback host binding. The UI sends a required write header and same-origin checks protect state-changing endpoints.
+Open `http://127.0.0.1:4179`. Set `STUDIO_PORT` or `STUDIO_DATA_DIR` to
+change the local port or data location. The server binds only to loopback;
+state-changing requests require a Studio header and same-origin checks.
+Project JSON retains the existing layout under
+`scripts/studio/data/projects/`.
+
+## Code layout
+
+- `app/main.py` configures FastAPI, static assets, and local mutation protection.
+- `app/routes/` contains the compatible JSON API and HTMX review pages.
+- `app/core/` owns project persistence, validation, approval gates, and hashes.
+- `app/templates/` contains the dashboard, review views, and reusable fragments.
+- `app/static/` contains the built Tailwind CSS, local HTMX bundle, and small
+  UI behaviors.
+- `cli.mjs` preserves the existing agent command while delegating to `cli.py`.
+- `data/projects/` keeps the existing on-disk project format and user data.
 
 ## Agent handoff
 
@@ -62,7 +87,7 @@ to encode PNG frames as MP4. Set `PUPPETEER_EXECUTABLE_PATH` when Chrome is
 installed at a nonstandard location.
 
 Automatic Indonesian voice generation with Pocket TTS is not currently part
-of this Studio setup. The Studio does not install Python or model weights.
+of this Studio setup. Studio's Python environment does not install model weights.
 
 ## Tests
 
@@ -70,4 +95,5 @@ of this Studio setup. The Studio does not install Python or model weights.
 npm test --prefix scripts
 ```
 
-The tests use Node's built-in test runner and temporary project data. No model credentials or new runtime packages are needed.
+The tests use temporary project data and need the Studio Python requirements,
+but no model credentials.

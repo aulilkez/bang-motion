@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Bang Motion Studio · Projects{% endblock %}
+{% block content %}
+<div class="grid gap-8 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-end">
+  <div>
+    <div class="mb-3 flex items-center gap-2 text-sm text-muted-foreground"><span class="badge badge-muted">Workspace</span><span>/</span><span>Overview</span></div>
+    <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Create with room to review.</h1>
+    <p class="mt-2 max-w-2xl text-muted-foreground">Move from a clear brief to an approved script and storyboard before animation begins.</p>
+  </div>
+  <div class="flex items-center gap-3 rounded-lg border bg-card p-4 shadow-sm">
+    <div class="grid size-10 shrink-0 place-items-center rounded-md bg-muted text-lg">✦</div>
+    <div><p class="text-sm font-medium">Approval-first workflow</p><p class="text-xs text-muted-foreground">Script → storyboard → animation</p></div>
+  </div>
+</div>
+
+<div class="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_19rem]">
+  <section class="card overflow-hidden">
+    <div class="border-b px-5 py-4 sm:px-6">
+      <div class="flex items-center justify-between gap-3"><div><p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">01 / Project setup</p><h2 class="mt-1 text-lg font-semibold tracking-tight">Start with a brief</h2></div><span class="badge badge-muted">New project</span></div>
+    </div>
+    <form action="/studio/projects" method="post" hx-post="/studio/projects" hx-target="#flash-stack" hx-swap="innerHTML" class="space-y-5 p-5 sm:p-6">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="field"><label for="title">Video title</label><input class="control" id="title" name="title" required placeholder="Why is the sky blue?" /></div>
+        <div class="field"><label for="topic">Topic</label><input class="control" id="topic" name="topic" required placeholder="Light scattering in the atmosphere" /></div>
+        <div class="field sm:col-span-2"><label for="originalPrompt">Your prompt</label><textarea class="control min-h-24" id="originalPrompt" name="originalPrompt" required placeholder="Describe the video you want to make…"></textarea><p class="field-hint">The original prompt is saved with the project.</p></div>
+        <div class="field sm:col-span-2"><label for="purpose">Purpose / target audience</label><input class="control" id="purpose" name="purpose" required placeholder="Explain the science to curious teens" /></div>
+        <div class="field"><label for="durationSeconds">Duration</label><div class="relative"><input class="control pr-16" id="durationSeconds" name="durationSeconds" type="number" min="5" max="600" value="120" required /><span class="pointer-events-none absolute right-3 top-2.5 text-sm text-muted-foreground">seconds</span></div></div>
+        <div class="field"><label for="language">Language</label><input class="control" id="language" name="language" value="Indonesian" required /></div>
+        <div class="field"><label for="format">Project format</label><select class="control" id="format" name="format"><option value="explainer">Explainer</option><option value="opener">Opener / promo</option></select></div>
+        <div class="field"><label for="style">Animation style</label><select class="control" id="style" name="style" data-style-select>
+          <optgroup label="Explainers" data-format-group="explainer">
+            {% for value, label in explainer_styles %}<option value="{{ value }}" {% if value == 'cartoon-collage' %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </optgroup>
+          <optgroup label="Openers and promos" data-format-group="opener">
+            {% for value, label in opener_styles %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+          </optgroup>
+        </select></div>
+        <div class="field"><label for="aspectRatio">Aspect ratio</label><select class="control" id="aspectRatio" name="aspectRatio"><option>16:9</option><option>9:16</option></select></div>
+        <div class="field"><label for="voiceover">Voice-over</label><select class="control" id="voiceover" name="voiceover"><option value="script-only">Write narration</option><option value="audio-provided">I have audio</option><option value="none">No voice-over</option></select></div>
+        <div class="field"><label for="subtitles">Subtitles</label><select class="control" id="subtitles" name="subtitles"><option value="requested">Include subtitles</option><option value="none">No subtitles</option></select></div>
+        <div class="field"><label for="music">Music</label><select class="control" id="music" name="music"><option value="none">No music</option><option value="music-only">Music only</option><option value="under-voiceover">Under voice-over</option></select></div>
+        <div class="field"><label for="exportMp4">MP4 export</label><select class="control" id="exportMp4" name="exportMp4"><option value="true">Requested</option><option value="false">Not needed</option></select></div>
+      </div>
+      <div class="flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between"><p class="text-xs text-muted-foreground">The Studio stores data locally and does not call an AI provider.</p><button class="btn btn-primary" type="submit">Create project <span aria-hidden="true">↗</span></button></div>
+    </form>
+  </section>
+
+  <aside class="space-y-6">
+    <section class="card p-5">
+      <div class="flex items-center gap-3"><span class="grid size-9 place-items-center rounded-md border bg-muted/50 text-muted-foreground">01</span><div><h2 class="font-semibold">Script review</h2><p class="text-sm text-muted-foreground">Edit, request changes, or approve.</p></div></div>
+      <div class="my-4 ml-[17px] h-5 border-l border-dashed"></div>
+      <div class="flex items-center gap-3"><span class="grid size-9 place-items-center rounded-md border bg-muted/50 text-muted-foreground">02</span><div><h2 class="font-semibold">Storyboard review</h2><p class="text-sm text-muted-foreground">Check scenes, timing, and movement.</p></div></div>
+      <div class="my-4 ml-[17px] h-5 border-l border-dashed"></div>
+      <div class="flex items-center gap-3"><span class="grid size-9 place-items-center rounded-md border bg-muted/50 text-muted-foreground">03</span><div><h2 class="font-semibold">Animation & QA</h2><p class="text-sm text-muted-foreground">Generate only after storyboard approval.</p></div></div>
+    </section>
+    <section class="rounded-lg border bg-muted/40 p-5"><p class="text-sm font-medium">Agent handoff</p><p class="mt-1 text-sm leading-6 text-muted-foreground">Copy the generated task into Codex, Claude Code, or another coding agent. Resume it with the project ID after each approval.</p></section>
+  </aside>
+</div>
+
+<section class="mt-10">
+  <div class="mb-4 flex items-end justify-between gap-4"><div><p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Saved locally</p><h2 class="mt-1 text-xl font-semibold tracking-tight">Your projects</h2></div><span class="badge badge-outline">{{ projects|length }} project{% if projects|length != 1 %}s{% endif %}</span></div>
+  {% if projects %}<div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{% for project in projects %}{% include "partials/project_card.html" %}{% endfor %}</div>
+  {% else %}<div class="rounded-lg border border-dashed bg-card px-6 py-12 text-center"><div class="mx-auto grid size-11 place-items-center rounded-full bg-muted text-lg">＋</div><h3 class="mt-3 font-medium">No projects yet</h3><p class="mt-1 text-sm text-muted-foreground">Create a project brief to begin the review workflow.</p></div>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ project.brief.title }} · {{ kind|title }} review{% endblock %}
+{% block content %}
+<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+  <div><div class="mb-2 flex items-center gap-2 text-sm text-muted-foreground"><a href="/studio/index.html" class="hover:text-foreground">Projects</a><span>/</span><span>{{ kind|title }} review</span></div><h1 class="max-w-3xl text-3xl font-semibold tracking-tight">{{ project.brief.title }}</h1><p class="mt-1 font-mono text-xs text-muted-foreground">{{ project.id }} <span class="mx-1.5">·</span>{{ kind|title }} {% if kind != 'preview' %}version {{ version or 'not submitted' }}{% else %}preview{% endif %}</p></div>
+  <div class="flex items-center gap-2"><span class="badge {% if 'approved' in project.status %}badge-success{% elif 'review' in project.status %}badge-warning{% else %}badge-muted{% endif %}">{{ project.status.replace('_', ' ') }}</span><a class="btn btn-outline btn-sm" href="/projects/{{ project.id }}/review/preview">Preview</a></div>
+</div>
+
+<div class="mb-6 flex flex-wrap items-center gap-2 border-b pb-3 text-sm">
+  <a href="/projects/{{ project.id }}/review/script" class="tab-link {% if kind == 'script' %}tab-active{% endif %}">Script</a>
+  <a href="/projects/{{ project.id }}/review/storyboard" class="tab-link {% if kind == 'storyboard' %}tab-active{% endif %}">Storyboard</a>
+  <a href="/projects/{{ project.id }}/review/preview" class="tab-link {% if kind == 'preview' %}tab-active{% endif %}">Animation preview</a>
+</div>
+
+{% if kind == 'preview' %}
+  <section class="card overflow-hidden">
+    <div class="flex flex-col gap-3 border-b px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 class="font-semibold tracking-tight">Animation preview</h2><p class="text-sm text-muted-foreground">Live preview of <code class="rounded bg-muted px-1.5 py-0.5 text-xs">output/index.html</code></p></div><span class="badge badge-muted">{{ project.status.replace('_', ' ') }}</span></div>
+    {% if preview_exists %}<iframe class="preview-frame" src="/projects/{{ project.id }}/preview/index.html" title="Animation preview"></iframe>{% else %}<div class="grid min-h-[24rem] place-items-center p-8 text-center"><div><div class="mx-auto grid size-12 place-items-center rounded-full bg-muted text-xl">◉</div><h3 class="mt-4 font-medium">Preview is not available yet</h3><p class="mt-1 max-w-md text-sm text-muted-foreground">The agent's animation appears here after it creates <code>output/index.html</code>.</p></div></div>{% endif %}
+    <div class="flex flex-wrap gap-2 border-t p-4"><a href="/projects/{{ project.id }}/review/script" class="btn btn-outline btn-sm">Review script</a><a href="/projects/{{ project.id }}/review/storyboard" class="btn btn-outline btn-sm">Review storyboard</a><a href="/projects/{{ project.id }}/preview/index.html" class="btn btn-ghost btn-sm" target="_blank" rel="noreferrer">Open output ↗</a></div>
+  </section>
+{% else %}
+  <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
+    <section class="card min-w-0 overflow-hidden">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4 sm:px-6"><div><p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">{% if kind == 'script' %}Narration & scene intent{% else %}Scene plan & motion{% endif %}</p><h2 class="mt-1 text-lg font-semibold tracking-tight">Review the {{ kind }}</h2></div><span class="badge {% if is_approved %}badge-success{% elif awaiting %}badge-warning{% else %}badge-muted{% endif %}">{% if is_approved %}Approved version{% elif awaiting %}Awaiting your decision{% else %}Workflow status{% endif %}</span></div>
+      <div class="space-y-5 p-5 sm:p-6">
+        {% if changed_after_approval %}<div class="callout callout-warning"><strong>Approval expired.</strong> This content changed after version {{ last_approval.version }} was approved. Review and approve version {{ version }} again.</div>{% endif %}
+        {% if kind == 'script' %}<p class="text-sm text-muted-foreground">Edit the structured script, then save it as a new version. Saving clears earlier approvals.</p>
+        {% else %}
+          <div class="flex flex-wrap items-center justify-between gap-3"><p class="text-sm text-muted-foreground">Edit scene cards, reorder them, or use the full JSON editor. Saving recalculates scene timing in order.</p><button class="btn btn-outline btn-sm" type="button" data-add-scene {% if not can_add_scene %}disabled{% endif %}>＋ Add scene</button></div>
+          {% if content and content.scenes %}<div class="space-y-3" id="scene-cards" data-scene-cards data-duration="{{ project.brief.durationSeconds }}">
+            {% for scene in content.scenes %}{% include "partials/scene_card.html" %}{% endfor %}
+          </div>{% endif %}
+        {% endif %}
+        <form action="/studio/projects/{{ project.id }}/{{ kind }}/save" method="post" hx-post="/studio/projects/{{ project.id }}/{{ kind }}/save" hx-target="#flash-stack" hx-swap="innerHTML" data-content-form {% if kind == 'storyboard' %}data-storyboard-form{% endif %}>
+          <input type="hidden" name="expectedVersion" value="{{ version }}" />
+          <label for="content-json" class="mb-2 flex items-center justify-between text-sm font-medium">{% if kind == 'script' %}Structured script JSON{% else %}Storyboard JSON{% endif %}<span class="text-xs font-normal text-muted-foreground">Advanced editor</span></label>
+          <textarea id="content-json" name="contentJson" class="code-editor" spellcheck="false" aria-label="{{ kind }} JSON" data-content-json>{{ content_json }}</textarea>
+          <div class="mt-4 flex flex-wrap gap-2 border-t pt-4">
+            <button class="btn btn-outline" type="submit" {% if not content %}disabled{% endif %}>Save edits</button>
+          </div>
+        </form>
+        <div class="border-t pt-5">
+          <div class="mb-3"><h3 class="font-medium">Your decision</h3><p class="text-sm text-muted-foreground">The workflow can continue only after this exact version is approved.</p></div>
+          <div class="flex flex-wrap gap-2">
+            <form action="/studio/projects/{{ project.id }}/{{ kind }}/decision" method="post" hx-post="/studio/projects/{{ project.id }}/{{ kind }}/decision" hx-target="#flash-stack" hx-swap="innerHTML">
+              <input type="hidden" name="decision" value="approve" /><input type="hidden" name="version" value="{{ version }}" /><input type="hidden" name="hash" value="{{ hash }}" />
+              <button class="btn btn-primary" type="submit" {% if not awaiting or not content %}disabled{% endif %}>Approve {{ kind }}</button>
+            </form>
+            <button class="btn btn-outline" type="button" data-show-revision {% if not awaiting or not content %}disabled{% endif %}>Request changes</button>
+          </div>
+          <form action="/studio/projects/{{ project.id }}/{{ kind }}/decision" method="post" hx-post="/studio/projects/{{ project.id }}/{{ kind }}/decision" hx-target="#flash-stack" hx-swap="innerHTML" class="mt-3 hidden space-y-3 rounded-lg border bg-muted/20 p-4" data-revision-form>
+            <input type="hidden" name="decision" value="request_changes" /><input type="hidden" name="version" value="{{ version }}" /><input type="hidden" name="hash" value="{{ hash }}" />
+            <div class="field"><label for="revision-note">What should change?</label><textarea class="control min-h-24" id="revision-note" name="note" required placeholder="Leave clear, actionable notes for the AI agent"></textarea></div>
+            <button class="btn btn-outline" type="submit">Send revision request</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <aside class="space-y-4">
+      <section class="card p-5"><div class="flex items-center justify-between"><p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Project status</p><span class="status-dot {% if 'approved' in project.status %}bg-emerald-500{% elif 'review' in project.status %}bg-amber-500{% else %}bg-zinc-400{% endif %}"></span></div><h2 class="mt-2 text-xl font-semibold tracking-tight">{{ project.status.replace('_', ' ') }}</h2><p class="mt-1 text-sm text-muted-foreground">Approval applies to version {{ version or '—' }} and its saved content hash.</p><div class="mt-4 rounded-md bg-muted/60 p-3"><p class="text-xs font-medium text-muted-foreground">Review URL · local to this computer</p><code class="mt-1 block break-all text-xs">http://127.0.0.1:{{ port }}/projects/{{ project.id }}/review/{{ kind }}</code></div></section>
+      <section class="card p-5"><div class="flex items-center justify-between gap-2"><div><p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Agent handoff</p><h3 class="mt-1 font-semibold">Continue with your agent</h3></div><span class="badge badge-muted">No model API</span></div><p class="mt-2 text-sm text-muted-foreground">Copy this task into Codex, Claude Code, or another coding agent.</p><textarea id="agent-task" class="code-editor mt-3 min-h-56 text-xs" readonly>{{ agent_task }}</textarea><button type="button" class="btn btn-outline btn-sm mt-3" data-copy-task>Copy next task</button></section>
+      {% set relevant_revisions = project.revisions|selectattr('kind', 'equalto', kind)|list %}
+      {% if relevant_revisions %}<section class="card p-5"><p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Revision notes</p><div class="mt-3 space-y-3">{% for revision in relevant_revisions|reverse %}<div class="border-l-2 border-zinc-300 pl-3"><p class="text-xs text-muted-foreground">Version {{ revision.version }} · {{ revision.createdAt[:16].replace('T', ' ') }}</p><p class="mt-1 whitespace-pre-wrap text-sm">{{ revision.note }}</p></div>{% endfor %}</div></section>{% endif %}
+      {% set history = project.approvalHistory.get(kind, []) %}
+      {% if history %}<section class="card p-5"><p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Approval history</p><div class="mt-3 space-y-2">{% for approval in history|reverse %}<div class="flex items-center justify-between gap-2 text-sm"><span class="badge badge-success">v{{ approval.version }} approved</span><time class="text-xs text-muted-foreground">{{ approval.approvedAt[:16].replace('T', ' ') }}</time></div>{% endfor %}</div></section>{% endif %}
+    </aside>
+  </div>
+{% endif %}
+{% endblock %}
