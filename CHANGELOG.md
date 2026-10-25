@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Consolidate Puppeteer under `scripts/` so capture, frame export, and the After Effects SVG renderer share one install location.
+- Document that `export-frames.mjs` writes PNG files and ffmpeg creates the MP4; use a fresh output directory for each render.
+
 ## 1.19.0 — 2026-09-15
 
 **Shot size — move the camera to the subject**

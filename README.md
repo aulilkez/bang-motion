@@ -153,7 +153,7 @@ flowchart LR
 3. **Settle the assets.** Your own photos and logo come first. If you have none, the agent can generate them through an image MCP (fictional faces, logos added in code) — or pick a concept that needs no photos.
 4. **Let it build.** You get one `index.html`. The agent captures key seconds and checks them against the rules before handing over.
 5. **Review and iterate.** Open it, scrub with `?debug=1`, and describe what feels off. Feedback lands on the same file.
-6. **Deliver.** Keep the HTML, export MP4 with `scripts/render/export-frames.mjs`, or send a voice-over and the timeline re-times itself to it.
+6. **Deliver.** Keep the HTML, export an MP4 using the frame-render and ffmpeg steps below, or send a voice-over for agent-assisted retiming.
 
 > **Tip:** start each new video in a **new chat**. The skill is read when it is first invoked, and a long chat keeps earlier decisions in context.
 
@@ -225,14 +225,56 @@ The skill triggers on requests like "make an opener…", "promo video…", "expl
 | To… | You need |
 |---|---|
 | **Watch** the result | a browser + internet (GSAP and fonts load from a CDN). Nothing else. |
-| Verify frames automatically | Node + puppeteer (`scripts/render/snap.mjs`) — optional; `?debug=1` works by hand |
-| Export MP4 | Node + puppeteer + ffmpeg (`scripts/render/export-frames.mjs`) — optional |
+| Verify frames automatically | Node.js 22.12+ + Puppeteer (`scripts/render/snap.mjs`) — optional; `?debug=1` works by hand |
+| Export MP4 | Node.js 22.12+ + Puppeteer + ffmpeg (`scripts/render/export-frames.mjs`) — optional; the script writes PNG frames |
 | Sync to voice-over | ffmpeg, **or** nothing: `scripts/utilities/voiceover-pauses.html` detects pauses in the browser |
 | Use video clips | MP4 (H.264) or WebM files in `assets/` — optional |
 | Generate images | any image MCP the agent can call — optional |
 | Build in After Effects | After Effects + the Higgsfield MCP bridge — optional |
 
 A deliverable never needs `npm install` to be watched.
+
+### Capture frames and export MP4
+
+Puppeteer is only needed for the optional render tools. Install the pinned tool
+dependency once from a Bang Motion checkout:
+
+```bash
+npm install --prefix /path/to/bang-motion/scripts
+```
+
+Run snapshot capture from the video project directory. It opens that directory's
+`index.html` with `file://` and writes only the requested PNGs:
+
+```bash
+node /path/to/bang-motion/scripts/render/snap.mjs shots 1 3.5 8 12
+```
+
+For a full render, start the no-cache server **from the video project directory**
+in one terminal:
+
+```bash
+python /path/to/bang-motion/scripts/utilities/serve.py 5178
+```
+
+Then render frames from a second terminal, also in the video project directory:
+
+```bash
+node /path/to/bang-motion/scripts/render/export-frames.mjs
+```
+
+That script produces `frames/f00000.png`, `frames/f00001.png`, and so on; if
+that directory already contains a render, it automatically chooses `frames-02`,
+`frames-03`, and so on. It does not create an MP4 itself. Use the output
+directory printed by the script in the ffmpeg command:
+
+```bash
+ffmpeg -framerate 60 -i frames/f%05d.png -c:v libx264 -pix_fmt yuv420p -crf 16 -movflags +faststart output.mp4
+```
+
+If you set `OUT` or `FPS`, use the same frame directory and rate in the ffmpeg
+command. A non-empty custom `OUT` directory is rejected to prevent stale frames
+from extending a shorter export.
 
 ## How the rules work
 
@@ -270,7 +312,7 @@ docs/gallery/                      README preview images
 <details>
 <summary><b>Is the output a video file?</b></summary>
 
-The deliverable is an `index.html` that plays like a video: autoplay, loop, no player chrome. When you need a file, `scripts/render/export-frames.mjs` renders it frame by frame to MP4.
+The deliverable is an `index.html` that plays like a video: autoplay, loop, no player chrome. For an MP4, `scripts/render/export-frames.mjs` renders a PNG sequence, then ffmpeg combines it into a video.
 </details>
 
 <details>

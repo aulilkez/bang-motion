@@ -1,0 +1,9 @@
+{
+  "name": "bang-motion-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Optional browser-based capture and After Effects asset tools for Bang Motion.",
+  "dependencies": {
+    "puppeteer": "^25.10.0"
+  }
+}

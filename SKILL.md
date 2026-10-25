@@ -24,7 +24,10 @@ presentasi — patuhi sebelum menulis kode.
 Deliverable (`index.html`) hanya butuh browser modern + internet untuk CDN
 (GSAP, font). Python dan Node **opsional**, dipakai hanya untuk alat kerja:
 `scripts/utilities/serve.py` (server no-cache, cuma perlu bila memakai module lokal),
-puppeteer (snapshot/verifikasi otomatis, `scripts/render/export-frames.mjs` → MP4).
+Node.js 22.12+ dan Puppeteer (capture/export opsional). Untuk memasangnya di clone skill, jalankan
+`npm install --prefix <path-ke-bang-motion>/scripts` sekali. Snapshot memakai
+`scripts/render/snap.mjs`; ekspor frame memakai
+`scripts/render/export-frames.mjs` dan ffmpeg menggabungkan PNG menjadi MP4.
 Kalau user tidak punya keduanya: (1) tetap bangun satu-berkas, buka lewat
 klik dua kali; (2) verifikasi visual lewat `?debug=1` (panel scrub) dan
 screenshot manual per detik kunci; (3) MP4 lewat rekam layar (OBS / rekam
@@ -37,8 +40,8 @@ frame-by-frame butuh Node. Jangan pernah membuat deliverable yang butuh
 | Kebutuhan | Dengan ffmpeg | Tanpa ffmpeg |
 |---|---|---|
 | Sinkron VO (batas kalimat/paragraf) | `silencedetect` | `scripts/utilities/voiceover-pauses.html` — buka di browser, pilih audio, salin `SEG`/`PARA`; hasilnya sama persis (Web Audio, tanpa instal) |
-| Durasi/format audio | `ffprobe` | angka `DUR` dari vo-pauses.html; browser memutar wav/mp3/m4a/ogg langsung |
-| Export MP4 | gabung PNG dari export-frames.mjs | tidak ada MP4 — tawarkan instal satu perintah (`winget install Gyan.FFmpeg` / `brew install ffmpeg`) atau rekam layar |
+| Durasi/format audio | `ffprobe` | angka `DUR` dari `scripts/utilities/voiceover-pauses.html`; browser memutar wav/mp3/m4a/ogg langsung |
+| Export MP4 | `export-frames.mjs` menghasilkan urutan PNG; ffmpeg menggabungkannya | tidak ada MP4 — tawarkan instal satu perintah (`winget install Gyan.FFmpeg` / `brew install ffmpeg`) atau rekam layar |
 | Mempelajari video referensi (ekstrak frame) | `fps=` + `tile=` | minta user mengirim screenshot di detik kunci, atau buka videonya di browser dan potret pada detik tertentu |
 
 Tanpa ffmpeg alur explainer tetap lengkap sampai sinkron VO; hanya MP4 yang
@@ -373,10 +376,13 @@ bagian 1 dan 1b. Ringkasnya:
    (ikon/gambar) relatif di folder yang sama. Server no-cache
    (`scripts/utilities/serve.py`) hanya alat KERJA saat mengedit, bukan syarat
    menonton. Tanpa player di layar (lihat "Player"); sebutkan `?debug=1`
-   untuk scrub. **Export MP4 hanya bila user memintanya**: `scripts/
-   export-frames.mjs` merender tiap frame (60 fps) ke PNG lalu ffmpeg
-   menggabungkannya — cara ini bebas frame drop, tapi mahal, jadi bukan
-   langkah rutin dan bukan alat pengecekan.
+   untuk scrub. **Export MP4 hanya bila user memintanya**:
+   `scripts/render/export-frames.mjs` merender tiap frame (60 fps) ke PNG;
+   ffmpeg menggabungkan PNG tersebut menjadi MP4. Mulai server lokal dari
+   folder proyek dengan `scripts/utilities/serve.py` sebelum ekspor. Gunakan
+   direktori output baru untuk setiap render; script memilih `frames`, lalu
+   `frames-02`, `frames-03`, dan seterusnya agar frame lama tidak ikut.
+   Ekspor hanya bila user memintanya; snapshot tetap alat verifikasi.
 
 7. **Khusus explainer: naskah VO + ajakan merekam** — pesan penutup wajib
    memuat naskah VO lengkap dan meminta user merekam/generate lalu mengirim
@@ -546,4 +552,4 @@ dan buat layer dari belakang ke depan. Build 10 panggung ≈ 1 jam, 0 kredit.
 | `scripts/utilities/serve.py` | dev server no-cache (opsional, butuh Python; hanya bila memakai module lokal) |
 | `scripts/render/snap.mjs` | VERIFIKASI: potret detik kunci → lembar kontak (opsional, butuh Node + puppeteer) |
 | `scripts/utilities/voiceover-pauses.html` | deteksi jeda VO di browser (pengganti ffmpeg silencedetect, tanpa instal) |
-| `scripts/render/export-frames.mjs` | EXPORT: render semua frame → MP4, hanya bila diminta (opsional, butuh Node + puppeteer + ffmpeg) |
+| `scripts/render/export-frames.mjs` | EXPORT: render semua frame ke PNG; ffmpeg menggabungkannya menjadi MP4, hanya bila diminta (opsional, butuh Node + Puppeteer + ffmpeg) |
