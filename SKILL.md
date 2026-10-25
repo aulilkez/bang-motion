@@ -325,6 +325,38 @@ bagian 1 dan 1b. Ringkasnya:
 - Pertimbangkan selang-seling gelap–terang bila segmennya memang berganti
   mood; bukan kewajiban mekanis.
 
+## Bang Motion Studio — approval-first workflow
+
+When the user asks for an interactive review workflow, or explicitly wants to
+approve the script and storyboard before animation, use the local Studio. It
+does not call a model API; the coding agent prepares each stage and pauses for
+the user's decision in the browser.
+
+1. Start the Studio with `npm run studio --prefix scripts`, then open
+   `http://127.0.0.1:4179`. It binds to loopback only. Do not expose this server
+   publicly or claim this URL works from another device.
+2. Enter the project brief in the Studio and copy its agent task into the
+   active coding agent. Read `scripts/studio/README.md` and the project state
+   under `scripts/studio/data/projects/<id>/` before generating content.
+3. Generate and submit the structured script with
+   `node scripts/studio/cli.mjs submit <id> script <file.json>`. Give the user
+   `/projects/<id>/review/script`, then stop. Do not generate a storyboard
+   until the current script version is approved in the Studio.
+4. After the user resumes the agent, inspect the persisted decision and any
+   revision notes. Only then generate and submit the storyboard. Give the user
+   `/projects/<id>/review/storyboard`, then stop again. Do not start animation
+   until the current storyboard version is approved.
+5. After the user resumes the agent, inspect the approved storyboard snapshot
+   and build the animation with its selected starter. Save the deliverable as
+   `output/index.html` inside the project folder. Use the existing snapshot and
+   frame-export tools; report only files and checks that were actually
+   produced. See `scripts/studio/README.md` for quality-report and MP4 handoff.
+
+Approvals apply to a specific version and content hash. If the user edits
+content, approval is invalidated; never continue on a stale approval. A stopped
+agent can resume by project ID and should read `project.json`, approvals, and
+revision notes instead of regenerating already completed stages.
+
 ## Alur kerja
 
 0. **Kenali jenisnya** (tabel "Jenis pekerjaan"). Explainer → buka

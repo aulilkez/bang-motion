@@ -2,7 +2,12 @@
   "name": "bang-motion-tools",
   "version": "1.0.0",
   "private": true,
-  "description": "Optional browser-based capture and After Effects asset tools for Bang Motion.",
+  "description": "Bang Motion render tools and local interactive Studio workflow.",
+  "scripts": {
+    "studio": "node studio/server.mjs",
+    "studio:cli": "node studio/cli.mjs",
+    "test": "node studio/test/workflow.test.mjs"
+  },
   "dependencies": {
     "puppeteer": "^25.10.0"
   }
