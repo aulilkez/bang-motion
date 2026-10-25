@@ -4,6 +4,12 @@ Bang Motion is an agent skill and a local review studio for making animated
 videos with HTML, CSS, and GSAP. Choose the lightweight skill workflow or the
 approval-gated Studio workflow below. Both produce a playable `index.html`.
 
+> **Update notice:** Bang Motion is actively maintained and updated regularly.
+> Some features or components may change, become temporarily unavailable, or
+> behave unexpectedly while updates are in progress. If something breaks, check
+> the latest setup instructions and report the issue with the affected workflow
+> and error details.
+
 ## Choose how to work
 
 | | Skill-only | Studio + Render |
