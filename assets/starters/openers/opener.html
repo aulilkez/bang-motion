@@ -10,11 +10,11 @@
   #world, scene Three.js ber-state, 8 pintu teks, transisi opsional, autoplay + loop tanpa
   player (?debug=1 = panel scrub, ?demo=1 = peraga pintu teks).
   SENGAJA TANPA URUTAN ADEGAN CONTOH. Kerangka (konsep, jumlah adegan, objek utama,
-  pembuka, penutup) lahir dari references/opener-konsep.md — bukan dari file ini.
+  pembuka, penutup) lahir dari references/opener-concepts.md — bukan dari file ini.
 
   =====  STYLE BRIEF — isi dulu, baru sentuh kode (SKILL.md Hukum #3)  =====
   Tema/produk + 3 kata sifat : ____________________
-  Konsep (opener-konsep.md)   : kandidat 1 ______ / 2 ______ / 3 ______  -> dipilih: ______
+  Konsep (opener-concepts.md)   : kandidat 1 ______ / 2 ______ / 3 ______  -> dipilih: ______
   Sidik jari struktur         : konsep · n adegan · objek tiap adegan · pembuka · penutup
   Palet (dari brand)          : utama #______  latar #______  aksen #______
   Font display / pendamping   : ____________  / ____________   (bukan Poppins/Inter/Roboto/Montserrat)
@@ -141,7 +141,7 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden;
     <div id="dom">
       <div class="paper" id="paper"><i class="b b1"></i><i class="b b2"></i><i class="b b3"></i></div>
       <div class="pocket" id="pocket"></div>
-      <!-- Adegan, jumlahnya, dan urutannya ditulis dari rundown KONSEP (references/opener-konsep.md).
+      <!-- Adegan, jumlahnya, dan urutannya ditulis dari rundown KONSEP (references/opener-concepts.md).
            Adegan tidak harus "kalimat + objek": boleh aksi produk tanpa teks, tipografi murni,
            atau beberapa objek yang saling bereaksi. Elemen di bawah hanya PLACEHOLDER untuk ?demo=1. -->
       <section class="scene" id="sc-a"><div class="hero-wrap">
@@ -302,7 +302,7 @@ const rig=$('#world'), leak=$('#leak');
 
 /* ---- TRANSISI OPSIONAL (menu techniques.md §4c). SENGAJA tidak dipanggil di starter.
    Push-through dan light leak termasuk komponen kanonik: pakai hanya bila konsep menuntut,
-   paling banyak dua komponen kanonik per opener (opener-konsep.md). ---- */
+   paling banyak dua komponen kanonik per opener (opener-concepts.md). ---- */
 let leakSide=1;
 const sweep=(at,dur=1.0)=>{ const side=(leakSide*=-1);   // light leak bergantian sisi
   tl.fromTo(leak,{x:side*1500,y:-240,scale:.85},
@@ -368,7 +368,7 @@ breathe(0,DURATION);
      popDot(dotN, T+.75) HANYA bila kalimat memang bertanda baca — judul/klaim default tanpa titik.
      mark(hlN, T+.5) HANYA bila style brief memakai sorotan kata — tidak wajib, tidak di setiap kalimat.
      Tanpa sorotan, penekanan dari inWords / ukuran / redup → penuh / objek di samping kata.
-   Pembuka, cara menyajikan fitur, penutup: pilih dari menu opener-konsep.md.
+   Pembuka, cara menyajikan fitur, penutup: pilih dari menu opener-concepts.md.
    ============================================================================== */
 
 /* ---- PERAGA ?demo=1 — katalog pintu teks satu per satu. Ini daftar PERKAKAS, bukan urutan adegan. ---- */

@@ -4,7 +4,7 @@ Dibaca bila user sudah membuka proyek After Effects dan bridge Higgsfield (MCP `
 tersambung, lalu meminta explainer dibangun **langsung di AE**. Angka acuan dari satu
 build explainer kartun panggung (103 dtk VO, 10 panggung, 20 karakter bersendi, 96 aset
 PNG): ±67 menit dari comp master sampai contact sheet terakhir, ±100 panggilan tool AE,
-0 kredit Higgsfield. Hukum gaya tetap dari `kartun-panggung.md`; dokumen ini hanya
+0 kredit Higgsfield. Hukum gaya tetap dari `cartoon-stage.md`; dokumen ini hanya
 soal CARA membangunnya lewat bridge.
 
 ## Apa yang bisa dan tidak bisa dilakukan bridge
@@ -72,7 +72,7 @@ tambah Scale 100→111 dan 111→100 di waktu yang sama supaya tepi comp tidak t
    plus daftar kamera per panggung `(t, x, y, z)`. Style brief kartun panggung tetap wajib.
 1. **Kerangka lewat satu Lottie kecil**: comp master + tiap precomp berisi hanya layer
    `langit`, layer precomp di master dengan `ip/op/st`. Impor WAV VO ke master.
-2. **Aset ilustrasi dari kode** (`scripts/ae/bridge/aset-svg.py`): tiap aset = satu
+2. **Aset ilustrasi dari kode** (`scripts/ae/bridge/svg-assets.py`): tiap aset = satu
    fungsi menggambar (rect/ellipse/path halus) di koordinat lokal dengan pivot yang
    ditentukan; skrip menulis SVG + `manifest.json` berisi `png, pos, anchor(px 2×),
    scale 50`. Render semua dengan `node scripts/ae/bridge/svg2png.cjs <folder>`
@@ -83,7 +83,7 @@ tambah Scale 100→111 dan 111→100 di waktu yang sama supaya tepi comp tidak t
    (anchor, position, scale 50, opacity awal) per aset → `modify_layer parentLayerName:"CAM"`
    untuk semua → `set_keyframes` kamera & aset → `set_expression` gerak idle.
    `ae_apply_gradient` langit dipanggil terpisah SEBELUM batch.
-4. **Karakter**: `python scripts/ae/bridge/rig-tokoh.py "<comp>" <prefix> <x> <gy> <skala> [varian]`
+4. **Karakter**: `python scripts/ae/bridge/character-rig.py "<comp>" <prefix> <x> <gy> <skala> [varian]`
    mencetak ±90 op; tambahkan `modify_layer <prefix> ROOT parentLayerName CAM` dan set
    ulang ROOT position/scale (jebakan 2). Kirim sebagai satu `ae_batch` per karakter
    (±15 KB). Setelah rig jadi, batch kedua berisi pose/aksi + expression idle.
@@ -96,7 +96,7 @@ tambah Scale 100→111 dan 111→100 di waktu yang sama supaya tepi comp tidak t
    `"C:/Program Files/Adobe/Adobe After Effects 2026/Support Files/aerender.exe" -project … -comp "# …" -output ….mp4`.
    Sebutkan kompromi yang tersisa (contoh: urutan layer yang tidak bisa disusun ulang).
 
-## Rig karakter native (`rig-tokoh.py`)
+## Rig karakter native (`character-rig.py`)
 
 Pola yang terbukti: **buat shape di posisi comp → `modify_layer` anchor = titik sendi
 (koordinat layer, relatif pusat bentuk) + position = titik sendi (comp) → parent**.

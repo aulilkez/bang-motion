@@ -13,7 +13,7 @@ kalimat; gambar membawa makna; **tidak ada caption**.
 
 Bedakan dari mode lain di skill ini:
 
-| | Kartun kolase (`starter-explainer-kartun`) | Kartun panggung (`starter-explainer-panggung`) |
+| | Kartun kolase (`cartoon-collage`) | Kartun panggung (`cartoon-stage`) |
 |---|---|---|
 | Dunia | satu kertas besar berisi cutout diam | banyak panggung, tiap panggung satu frame |
 | Gerak utama | kamera menyusuri aset diam | isi panggung beraksi; kamera menemani |
@@ -179,7 +179,7 @@ Pipeline yang terbukti (identitas boleh dari foto user, boleh anonim):
    > cutout animation puppet.
    Tambahkan ciri identitas (warna kulit, model rambut, kacamata, hijab polos
    satu warna) sebagai kalimat terpisah.
-2. **Ekspresi & kedip dibuat lokal** — `scripts/kepala-ekspresi.py`: deteksi dua
+2. **Ekspresi & kedip dibuat lokal** — `scripts/ae/bridge/head-expressions.py`: deteksi dua
    pupil (komponen gelap hampir persegi di tengah wajah) dan mulut (komponen
    lebar-tipis di bawahnya), lalu gambar ulang: kedip = elips kulit + garis
    lengkung; cemas = mulut cekung; kaget = lingkaran. Menghasilkan
@@ -212,7 +212,7 @@ akuifer muat satu frame pada zoom 1,08.
 
 ## Verifikasi
 
-Potret 20–24 detik kunci (`scripts/snap.mjs`) → lembar kontak 4 kolom, lalu
+Potret 20–24 detik kunci (`scripts/render/snap.mjs`) → lembar kontak 4 kolom, lalu
 nilai dengan mata: **ada frame yang wide?** kepala/menara terpotong? tokoh
 "lepas" di sendi? benda yang seharusnya muncul tidak ada (tanda tween menimpa
 translate)? Untuk sekuens kontinu, render GIF 8 fps satu panggung penuh —

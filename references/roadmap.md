@@ -6,7 +6,7 @@ penyempurnaannya.
 
 ## Prinsip penyusunan
 
-Hukum-hukum di `anti-ppt.md` dan resep di `techniques.md` berangkat dari satu
+Hukum-hukum di `anti-slideshow.md` dan resep di `techniques.md` berangkat dari satu
 masalah: hasil yang terasa seperti presentasi. Prinsip penyusunannya:
 **yang masuk ke skill hanyalah pelajaran yang digeneralisasi** — bukan
 warna, brand, atau kalimat spesifik proyek asalnya.
@@ -34,9 +34,9 @@ warna, brand, atau kalimat spesifik proyek asalnya.
 3. **Menu konsep, bukan template rundown.** Template rundown per genre
    (mis. hook→fitur→fitur→janji→logo→CTA) cenderung membuat semua opener
    berkerangka sama. Yang dikembangkan adalah menu di
-   `opener-konsep.md`: tambahkan konsep baru dari proyek yang diterima,
+   `opener-concepts.md`: tambahkan konsep baru dari proyek yang diterima,
    jangan menambah urutan baku.
-4. **Starter multi-file.** `assets/starter-opener.html` sengaja satu berkas agar
+4. **Starter multi-file.** `assets/starters/openers/opener.html` sengaja satu berkas agar
    mudah disalin; sediakan juga versi terpecah (struktur di
    `architecture.md`) begitu ekosistem skill mendukung folder template.
 5. **Ekspor lebih mulus.** Alternatif puppeteer: `MediaRecorder` +
@@ -47,7 +47,7 @@ warna, brand, atau kalimat spesifik proyek asalnya.
    N momen kunci (`tl.time(x)` → capture) dan menyusun contact sheet —
    mempercepat loop verifikasi visual yang sekarang manual.
 7. **Kalibrasi selera lanjut.** Kumpulkan lebih banyak pasangan
-   gagal→berhasil dari proyek berikutnya ke tabel di `anti-ppt.md`.
+   gagal→berhasil dari proyek berikutnya ke tabel di `anti-slideshow.md`.
    Tabel itu adalah aset paling berharga skill ini.
 
 ## Antipola yang menggoda tapi jangan
@@ -57,7 +57,7 @@ warna, brand, atau kalimat spesifik proyek asalnya.
   polos secara URUTAN: tanpa adegan contoh yang bisa ditiru kerangkanya.
 - **Satu jawaban benar per kegagalan.** Tabel gagal → berhasil yang hanya
   berisi satu perbaikan menjadi template baru. Tulis perbaikan sebagai menu
-  (lihat `opener-konsep.md`).
+  (lihat `opener-concepts.md`).
 - **Menambah efek demi efek.** Setiap efek baru harus lulus tes: apakah ia
   gerakan kamera / pengungkapan makna, atau cuma gimmick? Gimmick menua
   dalam hitungan bulan.
@@ -71,15 +71,15 @@ warna, brand, atau kalimat spesifik proyek asalnya.
 
 Folder ini portabel: `SKILL.md` + `references/` + `assets/` + `scripts/`
 hanyalah markdown, HTML, dan skrip. Untuk AI tanpa sistem skill:
-tempelkan isi `SKILL.md` sebagai instruksi, lampirkan `anti-ppt.md` +
+tempelkan isi `SKILL.md` sebagai instruksi, lampirkan `anti-slideshow.md` +
 `techniques.md` saat sesi desain, `architecture.md` saat sesi coding,
-dan berikan `starter-opener.html` sebagai titik awal kode.
+dan berikan `opener.html` sebagai titik awal kode.
 
 
 ## Sudah dikerjakan
 
 - Explainer: dua gaya (kartun+VO, foto jurnalistik tanpa VO) di 9:16 —
   `references/explainer.md`. Belum ada starter khusus explainer; kandidat
-  berikutnya: `assets/starter-explainer.html` (stage 9:16, helper
+  berikutnya: `assets/starters/explainers/continuous-action.html` (stage 9:16, helper
   say/unsay/photo/draw/cut/tint, syncAudio) supaya tidak menulis ulang.
 - Deliverable satu berkas tanpa server; `seek()` sinkron; angka tabular.

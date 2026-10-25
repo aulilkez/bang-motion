@@ -6,7 +6,7 @@ Keluaran: <nama>-senang.png, -cemas.png, -kaget.png, masing-masing + varian -ked
           dan kepala-meta.json (bbox kepala, posisi pupil, kotak mulut, warna kulit).
 
 Cara:
-  python kepala-ekspresi.py karakter/kepala-pria.png karakter/kepala-wanita.png
+  python head-expressions.py karakter/kepala-pria.png karakter/kepala-wanita.png
   (nama keluaran diambil dari nama berkas setelah "kepala-", atau nama berkasnya)
 
 Deteksi: komponen gelap (max RGB < 90, alpha > 180) → dua komponen kecil hampir persegi di

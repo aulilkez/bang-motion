@@ -18,7 +18,7 @@ proyek/
     └── export-frames.mjs  render frame-by-frame (puppeteer)
 ```
 
-Boleh dipadatkan jadi satu berkas (lihat `assets/starter-opener.html`) untuk
+Boleh dipadatkan jadi satu berkas (lihat `assets/starters/openers/opener.html`) untuk
 prototipe; pecah ke struktur di atas begitu adegan > 3.
 
 ## Panggung: 1920×1080 dipatok, lalu di-scale
@@ -119,12 +119,12 @@ nilai akhirnya.
 `python -m http.server` membiarkan browser menahan module JS lama lewat
 heuristic caching — edit "tidak ngefek", dan kamu akan mengejar hantu.
 Selalu pakai server yang mengirim `Cache-Control: no-store`
-(`scripts/serve.py`). ES module tidak jalan lewat `file://`, jadi server
+(`scripts/utilities/serve.py`). ES module tidak jalan lewat `file://`, jadi server
 memang wajib.
 
 ## Verifikasi vs export — dua hal berbeda
 
-- **Verifikasi** (setiap batch perubahan): `scripts/snap.mjs` memotret
+- **Verifikasi** (setiap batch perubahan): `scripts/render/snap.mjs` memotret
   6–20 detik kunci lewat `OPENER.seek(t)`; hasilnya dilihat, bukan
   disimpan. Tanpa Node: `?debug=1` + screenshot manual.
 - **Export** (hanya bila user minta MP4): render semua frame. Jangan
@@ -136,7 +136,7 @@ memang wajib.
 Jangan merekam layar untuk hasil final (frame drop). Karena semuanya
 deterministik: set `tl.time(frame/fps)` → tunggu 2× rAF (satu untuk GSAP
 menulis style, satu untuk render loop menggambar) → screenshot → ulangi.
-`scripts/export-frames.mjs` melakukannya via puppeteer; gabungkan dengan:
+`scripts/render/export-frames.mjs` melakukannya via puppeteer; gabungkan dengan:
 
 ```
 ffmpeg -framerate 60 -i frames/f%05d.png -c:v libx264 -pix_fmt yuv420p -crf 16 out.mp4
@@ -157,7 +157,7 @@ mereka berpikir dalam "detik ke-X" — tapi lewat URL debug, bukan di hasil.
 
 Setelah tiap batch perubahan: buka di browser, `tl.pause(); tl.time(X)` di
 konsol untuk tiap detik kunci, screenshot, nilai dengan heuristik di
-`anti-ppt.md`. Kode yang jalan ≠ adegan yang benar; hampir semua revisi
+`anti-slideshow.md`. Kode yang jalan ≠ adegan yang benar; hampir semua revisi
 user datang dari MELIHAT, bukan dari error.
 
 

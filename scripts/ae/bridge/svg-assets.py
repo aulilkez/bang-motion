@@ -1,9 +1,9 @@
 """Aset ilustrasi kartun panggung → SVG (vektor dari kode) → manifest penempatan untuk bridge AE.
 Alur: tulis fungsi menggambar per aset → jalankan skrip ini → `node svg2png.cjs aset` (PNG 2× transparan)
 → di AE lewat bridge: import_image PNG, modify_layer anchor=manifest.anchor, position=manifest.pos,
-scale=50, parentLayerName="CAM". Karakter TIDAK di sini — dibangun native lewat rig-tokoh.py.
+scale=50, parentLayerName="CAM". Karakter TIDAK di sini — dibangun native lewat character-rig.py.
 
-pakai: python aset-svg.py            → menulis aset/*.svg + manifest.json (contoh panggung di bawah)
+pakai: python svg-assets.py            → menulis aset/*.svg + manifest.json (contoh panggung di bawah)
 Ganti/isi bagian "# ---- aset ----" dengan panggung proyekmu; palet dari style brief.
 """
 import json, os, math

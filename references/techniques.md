@@ -329,7 +329,7 @@ Transisi tanpa cut yang dibawa objek (benda adegan baru menjadi wipe, keluar dar
 layar, match cut bentuk + ganti gaya render, tarik mundur menyingkap tujuan, tangan
 penjemput, menembus simbol, parade mendorong, putar tipis → kartu warna membuka,
 halaman naik bertumpuk, titik tumbuh, wadah mekar/menyusut, hasil menjauh jadi
-kalimat, zoom ke potongan UI, meredup lalu berganti, hapus-ketik) ada di `opener-konsep.md` → "Menu transisi yang
+kalimat, zoom ke potongan UI, meredup lalu berganti, hapus-ketik) ada di `opener-concepts.md` → "Menu transisi yang
 dibawa benda". Medan warna palet yang MENJADI latar babak berikutnya — logo tetap di
 tempat dan berbalik warna di garis medan — bukan balok dekoratif yang lewat: boleh,
 paling banyak dua kali per video.
@@ -527,7 +527,7 @@ const grainAt=t=>{const k=Math.floor(t*12);grainEl.style.transform=`translate(${
 - Kantong teks tetap diuji kontras; teks kecil boleh diletakkan di atas lapisan grain supaya
   hurufnya tidak tampak kotor.
 - Grainy gradient adalah kulit, bukan kerangka: konsep dan transisi tetap dari
-  `opener-konsep.md`.
+  `opener-concepts.md`.
 
 ## 7e. Menu gaya render objek — satu keluarga per video
 
@@ -555,7 +555,7 @@ berputar dan ternyata benda 3D). Mencampur tanpa alasan terasa seperti kumpulan 
 ## 8. Tile ikon & mockup UI
 
 **Tile ikon** (SATU opsi menyajikan fitur, bukan default — menu lengkap di
-`opener-konsep.md`; jumlah mengikuti fitur, tidak selalu tiga): rounded-square ±210px, rim border
+`opener-concepts.md`; jumlah mengikuti fitur, tidak selalu tiga): rounded-square ±210px, rim border
 aksen terang 2px, inner glow naik dari bawah (radial di 50% 115%), ikon
 stroke putih 3.5–4.5 + `drop-shadow`, label 1–2 kata di bawah. Masuk
 `back.out(1.9)` stagger 0.15.
@@ -569,7 +569,7 @@ rotateY ±10–24° dengan parent `perspective`), bukan sebagai kolom layout.
 
 **Animasi UI app/SaaS** — UI dirakit dari komponen, dipakai (kursor/jari/aksi UI), data
 hidup, dan transisi yang dibawa UI (panel mekar, lencana menyusut, karusel jendela):
-panduan layout-warna-ritme dan menu gerak di `opener-konsep.md` bagian "Animasi UI
+panduan layout-warna-ritme dan menu gerak di `opener-concepts.md` bagian "Animasi UI
 untuk app & SaaS".
 
 **Kamera mengikuti interaksi UI** — supaya demo tidak statis dan jelas apa yang diklik.
@@ -625,7 +625,7 @@ lain. Semua starter sudah membawa helper `clip()`.
   anotasi, dan transisi tetap dianimasikan di atas/sekitar klip.
 - Bila gambar diam cukup menjelaskan, pakai gambar (lebih ringan, ekspor lebih cepat).
 
-**Sumber klip** (ditanyakan ke user, sama seperti foto — `opener-konsep.md` "Foto dalam opener")
+**Sumber klip** (ditanyakan ke user, sama seperti foto — `opener-concepts.md` "Foto dalam opener")
 - File dari user (prioritas): rekaman layar produk, B-roll brand, footage acara.
 - Generate lewat MCP Higgsfield bila disetujui — cek biaya dulu (klip video jauh lebih mahal
   daripada gambar). Paling konsisten: generate gambar dengan gaya proyek, lalu image-to-video.

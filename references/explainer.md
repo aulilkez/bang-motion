@@ -1,7 +1,7 @@
 # Explainer — cerita bergambar, bukan promo
 
 Untuk kartun edukasi flat berkarakter (gaya 6, **kartun panggung**: satu panggung
-per adegan, rig sendi, nol caption), baca [kartun-panggung.md](kartun-panggung.md).
+per adegan, rig sendi, nol caption), baca [cartoon-stage.md](cartoon-stage.md).
 Jumlah kalimat tidak menentukan jumlah shot; lebih banyak gerak kamera juga
 bukan otomatis lebih menarik. Bagian resep kolase di bawah adalah opsi, bukan
 pola wajib bagi semua explainer.
@@ -81,9 +81,9 @@ Naskah yang sama disimpan sebagai `vo-script.md`. Jangan hanya menulis
 ## Mulai dari starter yang benar
 
 Explainer SELALU dimulai dari starter gayanya (folder `assets/`):
-`starter-explainer-kartun.html`, `starter-explainer-jurnalisme.html`,
-`starter-explainer-katalog.html`, `starter-explainer-sketsa.html`, atau
-`starter-explainer.html` untuk aksi kontinu. Kelimanya satu rig; yang beda
+`cartoon-collage.html`, `visual-journalism.html`,
+`white-catalog.html`, `vintage-sketch.html`, atau
+`continuous-action.html` untuk aksi kontinu. Kelimanya satu rig; yang beda
 hanya PERMUKAAN (tekstur latar, jenis aset, font, warna). Dua mode gerak:
 
 | Mode | Dunia | Gerak utama | Gaya yang memakainya |
@@ -183,7 +183,7 @@ simbol tidak cukup menjelaskan. Explainer jurnalistik yang baik (±20 beat per
 9. Kalau `remove_background` menghapus subjeknya (kapal hilang, tersisa
    haluan kapal lain), jangan dipaksa — generate properti pengganti.
 
-Helper di `assets/starter-explainer-katalog.html`: `slam` (stempel
+Helper di `assets/starters/explainers/white-catalog.html`: `slam` (stempel
 dihentak), `block` (blok tanggal disingkap dari kiri), `multiply` (grid
 beruntun); CSS `.doc`, `.stampblk`, `.pnote`, `.grid`, `.cut.card`.
 
@@ -233,7 +233,7 @@ lahir 1.08–1.12× dan mengendap ke 1 dalam 0.8 dtk; elemen lama keluar ke
 atas dengan blur SAMBIL yang baru masuk. Kamera tetap bernapas di antara.
 
 **Retime ke VO yang datang belakangan** (video dirancang dulu tanpa suara).
-Tanpa ffmpeg: buka `scripts/vo-pauses.html`, pilih audionya, salin `SEG`
+Tanpa ffmpeg: buka `scripts/utilities/voiceover-pauses.html`, pilih audionya, salin `SEG`
 (mulai tiap potongan ucapan), `PARA` (mulai tiap paragraf = adegan) dan
 `DUR`; angkanya identik dengan `silencedetect` (ambang -30 dB relatif
 puncak, jeda >= 0,45 dtk, paragraf >= 0,8 dtk; ubah bila VO berisik).

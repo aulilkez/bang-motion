@@ -14,7 +14,7 @@ Openers, promos, product demos, kinetic typography, and explainers — built as 
 
 <img src="docs/gallery/hero.jpg" alt="A grid of styles Bang Motion can build: grainy gradient opener, SaaS product tour, flat pop promo with photos, visual journalism explainer, continuous action explainer, cartoon collage explainer" width="100%">
 
-[What you can make](#what-you-can-make) · [Style gallery](#style-gallery) · [Workflow](#recommended-workflow) · [Example prompts](#example-prompts) · [Install](#install) · [FAQ](#faq)
+[What you can make](#what-you-can-make) · [Style gallery](#style-gallery) · [Style menus](#the-menus-behind-the-looks) · [Workflow](#recommended-workflow) · [Example prompts](#example-prompts) · [Install](#install) · [Requirements](#requirements) · [Repository layout](#repository-layout) · [FAQ](#faq)
 
 </div>
 
@@ -153,7 +153,7 @@ flowchart LR
 3. **Settle the assets.** Your own photos and logo come first. If you have none, the agent can generate them through an image MCP (fictional faces, logos added in code) — or pick a concept that needs no photos.
 4. **Let it build.** You get one `index.html`. The agent captures key seconds and checks them against the rules before handing over.
 5. **Review and iterate.** Open it, scrub with `?debug=1`, and describe what feels off. Feedback lands on the same file.
-6. **Deliver.** Keep the HTML, export MP4 with `scripts/export-frames.mjs`, or send a voice-over and the timeline re-times itself to it.
+6. **Deliver.** Keep the HTML, export MP4 with `scripts/render/export-frames.mjs`, or send a voice-over and the timeline re-times itself to it.
 
 > **Tip:** start each new video in a **new chat**. The skill is read when it is first invoked, and a long chat keeps earlier decisions in context.
 
@@ -225,9 +225,9 @@ The skill triggers on requests like "make an opener…", "promo video…", "expl
 | To… | You need |
 |---|---|
 | **Watch** the result | a browser + internet (GSAP and fonts load from a CDN). Nothing else. |
-| Verify frames automatically | Node + puppeteer (`scripts/snap.mjs`) — optional; `?debug=1` works by hand |
-| Export MP4 | Node + puppeteer + ffmpeg (`scripts/export-frames.mjs`) — optional |
-| Sync to voice-over | ffmpeg, **or** nothing: `scripts/vo-pauses.html` detects pauses in the browser |
+| Verify frames automatically | Node + puppeteer (`scripts/render/snap.mjs`) — optional; `?debug=1` works by hand |
+| Export MP4 | Node + puppeteer + ffmpeg (`scripts/render/export-frames.mjs`) — optional |
+| Sync to voice-over | ffmpeg, **or** nothing: `scripts/utilities/voiceover-pauses.html` detects pauses in the browser |
 | Use video clips | MP4 (H.264) or WebM files in `assets/` — optional |
 | Generate images | any image MCP the agent can call — optional |
 | Build in After Effects | After Effects + the Higgsfield MCP bridge — optional |
@@ -251,27 +251,18 @@ Full detail lives in `SKILL.md` and `references/`.
 ## Repository layout
 
 ```
-SKILL.md                         rules & workflow (read by the agent)
-.claude-plugin/                  plugin + marketplace manifests
-references/
-  opener-konsep.md               19 opener concepts, UI animation, photos in openers
-  anti-ppt.md                    slide patterns → fixes
-  techniques.md                  typography, camera, transitions, backgrounds, render families
-  explainer.md                   explainer styles, camera recipes, VO re-timing
-  kartun-panggung.md             cartoon stage explainers
-  architecture.md                stage, camera rig, determinism, export
-  ae-bridge-higgsfield.md        building inside After Effects via the MCP bridge
-  roadmap.md                     where the skill is heading
+SKILL.md                          skill instructions and workflow
+.claude-plugin/                   Claude Code plugin manifests
+references/                       motion design guides and technical references
 assets/
-  starter-opener.html            opener / promo architecture (GSAP + Three.js)
-  starter-explainer*.html        one starter per explainer style
+  starters/
+    openers/opener.html            opener and promo starter
+    explainers/                    one starter per explainer style
 scripts/
-  snap.mjs                       verify: capture key seconds
-  export-frames.mjs              export: frame-by-frame PNG → MP4
-  vo-pauses.html                 voice-over pause detection, no ffmpeg needed
-  serve.py                       no-cache dev server (optional)
-  ae/bridge/                     After Effects bridge helpers
-docs/gallery/                    README preview images
+  render/                          frame capture and MP4 export
+  utilities/                       local server and voice-over pause detector
+  ae/bridge/                       After Effects bridge helpers
+docs/gallery/                      README preview images
 ```
 
 ## FAQ
@@ -279,7 +270,7 @@ docs/gallery/                    README preview images
 <details>
 <summary><b>Is the output a video file?</b></summary>
 
-The deliverable is an `index.html` that plays like a video: autoplay, loop, no player chrome. When you need a file, `scripts/export-frames.mjs` renders it frame by frame to MP4.
+The deliverable is an `index.html` that plays like a video: autoplay, loop, no player chrome. When you need a file, `scripts/render/export-frames.mjs` renders it frame by frame to MP4.
 </details>
 
 <details>

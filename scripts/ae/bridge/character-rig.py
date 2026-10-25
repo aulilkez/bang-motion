@@ -5,7 +5,7 @@ Rig manusia gua native (shape layer + null sendi) → daftar op ae_batch.
 Pola yang terbukti di bridge: buat shape di posisi comp → set anchor di titik sendi + posisi = titik sendi →
 parent (lompatan menjaga posisi). Rotasi sendi lalu berputar tepat di sendinya.
 
-pakai: python rig-tokoh.py "<comp>" <prefix> <x> <gy> <skala> [varian]   → mencetak JSON ops
+pakai: python character-rig.py "<comp>" <prefix> <x> <gy> <skala> [varian]   → mencetak JSON ops
 varian: utama (berjanggut, tunik bulu), anggota1..3 (warna/rambut berbeda)
 Hierarki: <p> ROOT(null, pelvis) → paha → betis → kaki ; ROOT → torso → lengan → lengan bawah → tangan ; torso → kepala → rambut/mata/alis/mulut/janggut
 """
