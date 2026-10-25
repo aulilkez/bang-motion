@@ -1,89 +1,292 @@
-"""Aset ilustrasi kartun panggung → SVG (vektor dari kode) → manifest penempatan untuk bridge AE.
-Alur: tulis fungsi menggambar per aset → jalankan skrip ini → `node svg2png.cjs aset` (PNG 2× transparan)
-→ di AE lewat bridge: import_image PNG, modify_layer anchor=manifest.anchor, position=manifest.pos,
-scale=50, parentLayerName="CAM". Karakter TIDAK di sini — dibangun native lewat character-rig.py.
+"""Generate SVG illustration assets and an After Effects placement manifest.
 
-pakai: python svg-assets.py            → menulis aset/*.svg + manifest.json (contoh panggung di bawah)
-Ganti/isi bagian "# ---- aset ----" dengan panggung proyekmu; palet dari style brief.
+Each asset is drawn in local coordinates around a pivot. SVGs render at 2x so
+they can be imported into After Effects at 50% scale. The generated manifest
+contains the layer position and anchor point expected by the Higgsfield bridge.
+
+Usage:
+    python svg-assets.py
+    node svg2png.cjs aset
+
+The scene below is an editable example. Replace its asset definitions and
+palette with the scene described in the project's style brief.
 """
-import json, os, math
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, 'aset'); os.makedirs(OUT, exist_ok=True)
-PX = 2  # kerapatan render: PNG 2×, dipasang di AE dengan scale 50 %
+from __future__ import annotations
 
-# Palet contoh (kartun panggung: flat cerah, tanpa tekstur). Ganti dari style brief proyek.
-PAL = dict(sky1='#CFE6E4', sky2='#FBF1DC', oker='#D9A066', oker2='#B97F4A', batu='#9C9186', batu2='#7D736A',
-           rumput='#9DB874', rumput2='#7FA65E', api='#C8553D', api2='#F2C46D', tinta='#2F4858', kayu='#8A6A4A',
-           krem='#FBF1DC', air='#5AABB8', air2='#9ED6DD', malam='#34505E')
-C = PAL
+import json
+import math
+from pathlib import Path
+from typing import Callable, Iterable
 
-class Shapes:
-    """Kumpulan bentuk di koordinat lokal; (0,0) = pivot aset. Semua rantai (return self)."""
-    def __init__(s): s.items = []; s.minx = s.miny = 1e9; s.maxx = s.maxy = -1e9
-    def _box(s, pts):
-        for x, y in pts:
-            s.minx = min(s.minx, x); s.miny = min(s.miny, y); s.maxx = max(s.maxx, x); s.maxy = max(s.maxy, y)
-    def rc(s, x, y, w, h, c, r=0, rot=0):
-        a = math.radians(rot); ca, sa = math.cos(a), math.sin(a)
-        s._box([(x + dx * ca - dy * sa, y + dx * sa + dy * ca) for dx in (-w / 2, w / 2) for dy in (-h / 2, h / 2)])
-        s.items.append(f'<rect x="{-w/2:.1f}" y="{-h/2:.1f}" width="{w:.1f}" height="{h:.1f}" rx="{r:.1f}" '
-                       f'fill="{C.get(c, c)}" transform="translate({x:.1f} {y:.1f}) rotate({rot})"/>')
-        return s
-    def el(s, x, y, w, h, c):
-        s._box([(x - w / 2, y - h / 2), (x + w / 2, y + h / 2)])
-        s.items.append(f'<ellipse cx="{x:.1f}" cy="{y:.1f}" rx="{w/2:.1f}" ry="{h/2:.1f}" fill="{C.get(c, c)}"/>'); return s
-    def pth(s, pts, c, smooth=0.0):
-        """Poligon tertutup; smooth 0 = sudut tajam, 0.3–0.5 = bukit/batu membulat (Catmull-Rom → bezier)."""
-        n = len(pts); T = []
-        for k in range(n):
-            a, b = pts[(k - 1) % n], pts[(k + 1) % n]
-            T.append(((b[0] - a[0]) * smooth / 2, (b[1] - a[1]) * smooth / 2))
-        d = f'M{pts[0][0]:.1f} {pts[0][1]:.1f}'
-        for k in range(n):
-            p0, p1 = pts[k], pts[(k + 1) % n]
-            c1 = (p0[0] + T[k][0], p0[1] + T[k][1]); c2 = (p1[0] - T[(k + 1) % n][0], p1[1] - T[(k + 1) % n][1])
-            d += f' C{c1[0]:.1f} {c1[1]:.1f} {c2[0]:.1f} {c2[1]:.1f} {p1[0]:.1f} {p1[1]:.1f}'
-            s._box([c1, c2, p1])
-        s.items.append(f'<path d="{d} Z" fill="{C.get(c, c)}"/>'); return s
+SCRIPT_DIR = Path(__file__).resolve().parent
+OUTPUT_DIR = SCRIPT_DIR / "aset"
+MANIFEST_PATH = SCRIPT_DIR / "manifest.json"
+RENDER_SCALE = 2
+BOUNDS_PADDING = 6
 
-MAN = {}
-def asset(panggung, name, build, pivot=(0, 0)):
-    """build(sh) menggambar di koordinat lokal dengan (0,0) = pivot; pivot = posisi di comp panggung (1920×1080).
-    Manifest: png, pos (= pivot, comp), anchor (px sumber 2×), scale 50 — langsung dipakai modify_layer."""
-    sh = Shapes(); build(sh); m = 6
-    x0, y0 = math.floor(sh.minx - m), math.floor(sh.miny - m); w, h = math.ceil(sh.maxx + m) - x0, math.ceil(sh.maxy + m) - y0
-    fn = f"{panggung.split()[0]}_{name.replace(' ', '-')}.svg"
-    svg = f'<svg xmlns="http://www.w3.org/2000/svg" width="{w*PX}" height="{h*PX}" viewBox="{x0} {y0} {w} {h}">' + ''.join(sh.items) + '</svg>'
-    open(os.path.join(OUT, fn), 'w', encoding='utf-8').write(svg)
-    MAN.setdefault(panggung, []).append(dict(name=name, svg=fn, png=fn.replace('.svg', '.png'), w=w * PX, h=h * PX,
-                                            pos=[round(pivot[0], 1), round(pivot[1], 1)], anchor=[-x0 * PX, -y0 * PX], scale=100 / PX))
+PALETTE = {
+    "sky1": "#CFE6E4", "sky2": "#FBF1DC",
+    "oker": "#D9A066", "oker2": "#B97F4A",
+    "batu": "#9C9186", "batu2": "#7D736A",
+    "rumput": "#9DB874", "rumput2": "#7FA65E",
+    "api": "#C8553D", "api2": "#F2C46D",
+    "tinta": "#2F4858", "kayu": "#8A6A4A",
+    "krem": "#FBF1DC", "air": "#5AABB8", "air2": "#9ED6DD",
+    "malam": "#34505E",
+}
 
-# ---- potongan yang sering dipakai (koordinat comp; pivot aset latar = (0,0)) ----
-def bukit(sh, base, c='rumput'):
-    sh.pth([(-400, base + 460), (-400, base), (100, base - 120), (520, base - 40), (900, base - 190), (1350, base - 70),
-            (1760, base - 160), (2320, base - 30), (2320, base + 460)], c, 0.4)
-def tanah(sh, gy, c='oker', rim='rumput2'):
-    sh.rc(960, gy + 300, 2700, 600, c).rc(960, gy + 8, 2700, 22, rim)
-def batu(sh, x, y, s=1.0, c='batu'):
-    sh.pth([(x - 90 * s, y), (x - 70 * s, y - 55 * s), (x - 10 * s, y - 80 * s), (x + 60 * s, y - 60 * s), (x + 95 * s, y)], c, 0.5)
-def pohon(sh, x, gy, s=1.0):
-    sh.rc(x, gy - 90 * s, 34 * s, 190 * s, 'kayu', 10 * s).el(x - 60 * s, gy - 230 * s, 150 * s, 130 * s, 'rumput2') \
-      .el(x + 55 * s, gy - 240 * s, 140 * s, 125 * s, 'rumput2').el(x, gy - 300 * s, 170 * s, 150 * s, 'rumput')
-def api_layers(P, x, gy):
-    """Api unggun = kayu + 3 lidah terpisah (agar tiap lidah bisa di-scale/rotate sendiri lewat expression)."""
-    asset(P, 'api kayu', lambda sh: sh.rc(-60, 0, 150, 18, 'kayu', 8, -12).rc(60, 0, 150, 18, 'kayu', 8, 12), (x, gy))
-    for k, (dx, w, h) in enumerate([(-28, 70, 170), (26, 60, 140), (0, 46, 100)]):
-        asset(P, f'api lidah {k+1}', lambda sh, w=w, h=h: sh.el(0, -h / 2, w, h, 'api' if h > 120 else 'api2'), (x + dx, gy - 22))
+Manifest = dict[str, list[dict[str, object]]]
+DrawFunction = Callable[["ShapeBuilder"], None]
+MANIFEST: Manifest = {}
 
-# ---- aset (CONTOH satu panggung; ganti dengan panggung proyekmu) ----
-P = 'P01 contoh'; gy = 860
-asset(P, 'bukit jauh', lambda sh: bukit(sh, 700))
-asset(P, 'tanah', lambda sh: tanah(sh, gy))
-asset(P, 'pohon', lambda sh: pohon(sh, 0, 0, 1.1), (1500, gy))
-asset(P, 'batu duduk', lambda sh: batu(sh, 0, 0, .9, 'batu2'), (560, gy + 20))
-api_layers(P, 960, gy + 20)
-asset(P, 'cahaya api', lambda sh: sh.el(0, 0, 900, 520, 'api2'), (960, gy - 60))   # di AE: opacity 30, dibuat sebelum tokoh
 
-json.dump(MAN, open(os.path.join(HERE, 'manifest.json'), 'w', encoding='utf-8'), indent=1)
-print(sum(len(v) for v in MAN.values()), 'aset di', len(MAN), 'panggung ->', OUT)
+class ShapeBuilder:
+    """Build SVG shapes in local coordinates and track their visible bounds."""
+
+    def __init__(self) -> None:
+        self.items: list[str] = []
+        self.min_x = math.inf
+        self.min_y = math.inf
+        self.max_x = -math.inf
+        self.max_y = -math.inf
+
+    def _include(self, points: Iterable[tuple[float, float]]) -> None:
+        for x, y in points:
+            self.min_x = min(self.min_x, x)
+            self.min_y = min(self.min_y, y)
+            self.max_x = max(self.max_x, x)
+            self.max_y = max(self.max_y, y)
+
+    def rectangle(
+        self,
+        x: float,
+        y: float,
+        width: float,
+        height: float,
+        color: str,
+        radius: float = 0,
+        rotation: float = 0,
+    ) -> "ShapeBuilder":
+        angle = math.radians(rotation)
+        cos_angle, sin_angle = math.cos(angle), math.sin(angle)
+        corners = [
+            (
+                x + dx * cos_angle - dy * sin_angle,
+                y + dx * sin_angle + dy * cos_angle,
+            )
+            for dx in (-width / 2, width / 2)
+            for dy in (-height / 2, height / 2)
+        ]
+        self._include(corners)
+        fill = PALETTE.get(color, color)
+        self.items.append(
+            f'<rect x="{-width / 2:.1f}" y="{-height / 2:.1f}" '
+            f'width="{width:.1f}" height="{height:.1f}" rx="{radius:.1f}" '
+            f'fill="{fill}" transform="translate({x:.1f} {y:.1f}) rotate({rotation})"/>'
+        )
+        return self
+
+    def ellipse(
+        self,
+        x: float,
+        y: float,
+        width: float,
+        height: float,
+        color: str,
+    ) -> "ShapeBuilder":
+        self._include(((x - width / 2, y - height / 2), (x + width / 2, y + height / 2)))
+        fill = PALETTE.get(color, color)
+        self.items.append(
+            f'<ellipse cx="{x:.1f}" cy="{y:.1f}" '
+            f'rx="{width / 2:.1f}" ry="{height / 2:.1f}" fill="{fill}"/>'
+        )
+        return self
+
+    def polygon(
+        self,
+        points: list[tuple[float, float]],
+        color: str,
+        smooth: float = 0.0,
+    ) -> "ShapeBuilder":
+        """Draw a closed polygon; smoothing converts corners to Bezier curves."""
+        if len(points) < 3:
+            raise ValueError("A closed polygon needs at least three points")
+
+        tangents = []
+        count = len(points)
+        for index in range(count):
+            previous = points[(index - 1) % count]
+            following = points[(index + 1) % count]
+            tangents.append(
+                (
+                    (following[0] - previous[0]) * smooth / 2,
+                    (following[1] - previous[1]) * smooth / 2,
+                )
+            )
+
+        path_data = f"M{points[0][0]:.1f} {points[0][1]:.1f}"
+        for index, start in enumerate(points):
+            end = points[(index + 1) % count]
+            start_tangent = tangents[index]
+            end_tangent = tangents[(index + 1) % count]
+            control_1 = (start[0] + start_tangent[0], start[1] + start_tangent[1])
+            control_2 = (end[0] - end_tangent[0], end[1] - end_tangent[1])
+            path_data += (
+                f" C{control_1[0]:.1f} {control_1[1]:.1f} "
+                f"{control_2[0]:.1f} {control_2[1]:.1f} "
+                f"{end[0]:.1f} {end[1]:.1f}"
+            )
+            self._include((control_1, control_2, end))
+
+        fill = PALETTE.get(color, color)
+        self.items.append(f'<path d="{path_data} Z" fill="{fill}"/>')
+        return self
+
+
+def add_asset(
+    scene: str,
+    name: str,
+    draw: DrawFunction,
+    pivot: tuple[float, float] = (0, 0),
+) -> None:
+    """Draw an asset, save its SVG, and append its placement data to the manifest."""
+    shapes = ShapeBuilder()
+    draw(shapes)
+    if not shapes.items:
+        raise ValueError(f"Asset {name!r} in scene {scene!r} has no shapes")
+
+    left = math.floor(shapes.min_x - BOUNDS_PADDING)
+    top = math.floor(shapes.min_y - BOUNDS_PADDING)
+    width = math.ceil(shapes.max_x + BOUNDS_PADDING) - left
+    height = math.ceil(shapes.max_y + BOUNDS_PADDING) - top
+    filename = f"{scene.split()[0]}_{name.replace(' ', '-')}.svg"
+    view_box = f"{left} {top} {width} {height}"
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" '
+        f'width="{width * RENDER_SCALE}" height="{height * RENDER_SCALE}" '
+        f'viewBox="{view_box}">'
+        f'{"".join(shapes.items)}</svg>'
+    )
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    (OUTPUT_DIR / filename).write_text(svg, encoding="utf-8")
+
+    MANIFEST.setdefault(scene, []).append(
+        {
+            "name": name,
+            "svg": filename,
+            "png": filename.removesuffix(".svg") + ".png",
+            "w": width * RENDER_SCALE,
+            "h": height * RENDER_SCALE,
+            "pos": [round(pivot[0], 1), round(pivot[1], 1)],
+            "anchor": [-left * RENDER_SCALE, -top * RENDER_SCALE],
+            "scale": 100 / RENDER_SCALE,
+        }
+    )
+
+
+# Reusable scene elements. Coordinates are composition-space; background pivots
+# usually sit at (0, 0).
+def draw_hills(shapes: ShapeBuilder, base_y: float, color: str = "rumput") -> None:
+    shapes.polygon(
+        [
+            (-400, base_y + 460), (-400, base_y), (100, base_y - 120),
+            (520, base_y - 40), (900, base_y - 190), (1350, base_y - 70),
+            (1760, base_y - 160), (2320, base_y - 30), (2320, base_y + 460),
+        ],
+        color,
+        smooth=0.4,
+    )
+
+
+def draw_ground(
+    shapes: ShapeBuilder,
+    ground_y: float,
+    color: str = "oker",
+    rim_color: str = "rumput2",
+) -> None:
+    shapes.rectangle(960, ground_y + 300, 2700, 600, color)
+    shapes.rectangle(960, ground_y + 8, 2700, 22, rim_color)
+
+
+def draw_rock(
+    shapes: ShapeBuilder,
+    x: float,
+    y: float,
+    scale: float = 1.0,
+    color: str = "batu",
+) -> None:
+    shapes.polygon(
+        [
+            (x - 90 * scale, y), (x - 70 * scale, y - 55 * scale),
+            (x - 10 * scale, y - 80 * scale), (x + 60 * scale, y - 60 * scale),
+            (x + 95 * scale, y),
+        ],
+        color,
+        smooth=0.5,
+    )
+
+
+def draw_tree(shapes: ShapeBuilder, x: float, ground_y: float, scale: float = 1.0) -> None:
+    shapes.rectangle(x, ground_y - 90 * scale, 34 * scale, 190 * scale, "kayu", 10 * scale)
+    shapes.ellipse(x - 60 * scale, ground_y - 230 * scale, 150 * scale, 130 * scale, "rumput2")
+    shapes.ellipse(x + 55 * scale, ground_y - 240 * scale, 140 * scale, 125 * scale, "rumput2")
+    shapes.ellipse(x, ground_y - 300 * scale, 170 * scale, 150 * scale, "rumput")
+
+
+def add_campfire(scene: str, x: float, ground_y: float) -> None:
+    """Create separate wood and flame layers for independent animation."""
+    add_asset(
+        scene,
+        "api kayu",
+        lambda shapes: shapes.rectangle(-60, 0, 150, 18, "kayu", 8, -12).rectangle(
+            60, 0, 150, 18, "kayu", 8, 12
+        ),
+        (x, ground_y),
+    )
+    flames = [(-28, 70, 170), (26, 60, 140), (0, 46, 100)]
+    for index, (offset_x, width, height) in enumerate(flames, start=1):
+        color = "api" if height > 120 else "api2"
+        add_asset(
+            scene,
+            f"api lidah {index}",
+            lambda shapes, width=width, height=height, color=color: shapes.ellipse(
+                0, -height / 2, width, height, color
+            ),
+            (x + offset_x, ground_y - 22),
+        )
+
+
+def build_example_scene() -> None:
+    """Build the editable example campfire scene."""
+    scene = "P01 contoh"
+    ground_y = 860
+    add_asset(scene, "bukit jauh", lambda shapes: draw_hills(shapes, 700))
+    add_asset(scene, "tanah", lambda shapes: draw_ground(shapes, ground_y))
+    add_asset(scene, "pohon", lambda shapes: draw_tree(shapes, 0, 0, 1.1), (1500, ground_y))
+    add_asset(
+        scene,
+        "batu duduk",
+        lambda shapes: draw_rock(shapes, 0, 0, 0.9, "batu2"),
+        (560, ground_y + 20),
+    )
+    add_campfire(scene, 960, ground_y + 20)
+    add_asset(
+        scene,
+        "cahaya api",
+        lambda shapes: shapes.ellipse(0, 0, 900, 520, "api2"),
+        (960, ground_y - 60),
+    )
+
+
+def main() -> None:
+    build_example_scene()
+    with MANIFEST_PATH.open("w", encoding="utf-8") as manifest_file:
+        json.dump(MANIFEST, manifest_file, indent=2, ensure_ascii=False)
+        manifest_file.write("\n")
+    asset_count = sum(len(scene_assets) for scene_assets in MANIFEST.values())
+    print(f"Generated {asset_count} assets across {len(MANIFEST)} scenes: {OUTPUT_DIR}")
+
+
+if __name__ == "__main__":
+    main()

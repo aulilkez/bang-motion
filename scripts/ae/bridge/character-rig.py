@@ -1,90 +1,273 @@
-"""Rig karakter native untuk bridge AE (lihat references/ae-bridge-higgsfield.md).
-Setelah op ini: modify_layer "<p> ROOT" parentLayerName "CAM", lalu set ulang position/scale ROOT (parent ke CAM berkeyframe membakar transform).
+"""Generate native After Effects shape layers for a simple jointed character.
 
-Rig manusia gua native (shape layer + null sendi) → daftar op ae_batch.
-Pola yang terbukti di bridge: buat shape di posisi comp → set anchor di titik sendi + posisi = titik sendi →
-parent (lompatan menjaga posisi). Rotasi sendi lalu berputar tepat di sendinya.
+The script prints a JSON operation list for the Higgsfield bridge. Create the
+shape layers at their composition-space positions, set each joint anchor, and
+then apply the parent relationships to preserve the pose.
 
-pakai: python character-rig.py "<comp>" <prefix> <x> <gy> <skala> [varian]   → mencetak JSON ops
-varian: utama (berjanggut, tunik bulu), anggota1..3 (warna/rambut berbeda)
-Hierarki: <p> ROOT(null, pelvis) → paha → betis → kaki ; ROOT → torso → lengan → lengan bawah → tangan ; torso → kepala → rambut/mata/alis/mulut/janggut
+Usage:
+    python character-rig.py "Composition Name" hero 960 860 1.0 [main|crew1|crew2|crew3]
+
+The existing variant names (``utama`` and ``anggota1``–``anggota3``) remain
+accepted for compatibility with saved bridge commands.
 """
-import json, sys
 
-def col(h): h = h.lstrip('#'); return {"r": round(int(h[0:2], 16) / 255, 3), "g": round(int(h[2:4], 16) / 255, 3), "b": round(int(h[4:6], 16) / 255, 3)}
-VAR = {
-    'utama':    dict(kulit='#C98B5E', kulit2='#B07650', tunik='#A9724A', tunik2='#8C5A36', rambut='#3B2A20', janggut=True),
-    'anggota1': dict(kulit='#D39A6A', kulit2='#B9835A', tunik='#7F8F5A', tunik2='#66744A', rambut='#2F2620', janggut=False),
-    'anggota2': dict(kulit='#B8784E', kulit2='#9E6644', tunik='#C8553D', tunik2='#A84634', rambut='#4A3325', janggut=False),
-    'anggota3': dict(kulit='#C48A5C', kulit2='#AA744E', tunik='#9C9186', tunik2='#7D736A', rambut='#2B2B2B', janggut=True),
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from typing import Any
+
+CHARACTER_VARIANTS = {
+    "main": {
+        "skin": "#C98B5E", "skin_shadow": "#B07650",
+        "tunic": "#A9724A", "tunic_shadow": "#8C5A36",
+        "hair": "#3B2A20", "beard": True,
+    },
+    "crew1": {
+        "skin": "#D39A6A", "skin_shadow": "#B9835A",
+        "tunic": "#7F8F5A", "tunic_shadow": "#66744A",
+        "hair": "#2F2620", "beard": False,
+    },
+    "crew2": {
+        "skin": "#B8784E", "skin_shadow": "#9E6644",
+        "tunic": "#C8553D", "tunic_shadow": "#A84634",
+        "hair": "#4A3325", "beard": False,
+    },
+    "crew3": {
+        "skin": "#C48A5C", "skin_shadow": "#AA744E",
+        "tunic": "#9C9186", "tunic_shadow": "#7D736A",
+        "hair": "#2B2B2B", "beard": True,
+    },
+}
+LEGACY_VARIANTS = {
+    "utama": "main",
+    "anggota1": "crew1",
+    "anggota2": "crew2",
+    "anggota3": "crew3",
 }
 
-def rig(comp, p, x, gy, s, var='utama'):
-    V = VAR[var]; ops = []
-    def add(name, shape, cx, cy, w, h, c, r=0):
-        ops.append({"tool": "add_shape_layer", "input": {"compositionName": comp, "name": f"{p} {name}", "shapeType": shape,
-                    "size": [round(w * s, 1), round(h * s, 1)], "position": [round(cx, 1), round(cy, 1)], "fillColor": col(c),
-                    **({"roundness": round(r * s, 1)} if shape == 'rectangle' and r else {})}})
-    def joint(name, ax, ay, jx, jy):
-        """anchor (koordinat layer, relatif pusat bentuk) + posisi titik sendi di comp."""
-        ops.append({"tool": "modify_layer", "input": {"compositionName": comp, "layerName": f"{p} {name}",
-                    "anchorPoint": [round(ax * s, 1), round(ay * s, 1)], "position": [round(jx, 1), round(jy, 1)]}})
-    def parent(child, par):
-        ops.append({"tool": "modify_layer", "input": {"compositionName": comp, "layerName": f"{p} {child}", "parentLayerName": f"{p} {par}"}})
-    X = lambda dx: x + dx * s
-    Y = lambda dy: gy + dy * s        # dy negatif = ke atas dari telapak
-    pel = (X(0), Y(-214))
-    # ---- ROOT ----
-    ops.append({"tool": "add_null_layer", "input": {"compositionName": comp, "name": f"{p} ROOT"}})
-    ops.append({"tool": "modify_layer", "input": {"compositionName": comp, "layerName": f"{p} ROOT", "anchorPoint": [50, 50], "position": [round(pel[0], 1), round(pel[1], 1)]}})
-    # ---- kaki belakang (R) lalu depan (L) — urutan buat = urutan tumpuk (yang dibuat terakhir di atas) ----
-    order = []
-    for side, dx, shade in (('R', 24, 'kulit2'), ('L', -24, 'kulit')):
-        hip = (X(dx), Y(-214)); knee = (X(dx), Y(-112)); ank = (X(dx), Y(-16))
-        add(f'kaki-{side}', 'rectangle', ank[0] + 12 * s, ank[1] + 6 * s, 64, 26, '#5A3E2B', 12); joint(f'kaki-{side}', -12, -6, ank[0], ank[1])
-        add(f'betis-{side}', 'rectangle', knee[0], knee[1] + 50 * s, 38, 110, V[shade], 18); joint(f'betis-{side}', 0, -50, knee[0], knee[1])
-        add(f'paha-{side}', 'rectangle', hip[0], hip[1] + 52 * s, 46, 118, V[shade], 22); joint(f'paha-{side}', 0, -52, hip[0], hip[1])
-        order += [(f'kaki-{side}', f'betis-{side}'), (f'betis-{side}', f'paha-{side}'), (f'paha-{side}', 'ROOT')]
-    # ---- lengan belakang (R) ----
-    sh_r = (X(52), Y(-340)); el_r = (X(52), Y(-262)); wr_r = (X(52), Y(-190))
-    add('tangan-R', 'ellipse', wr_r[0], wr_r[1] + 8 * s, 34, 40, V['kulit2']); joint('tangan-R', 0, -8, wr_r[0], wr_r[1])
-    add('lenganbawah-R', 'rectangle', el_r[0], el_r[1] + 36 * s, 30, 86, V['kulit2'], 15); joint('lenganbawah-R', 0, -36, el_r[0], el_r[1])
-    add('lengan-R', 'rectangle', sh_r[0], sh_r[1] + 38 * s, 34, 96, V['kulit2'], 17); joint('lengan-R', 0, -38, sh_r[0], sh_r[1])
-    # ---- torso: tunik bulu + tali bahu ----
-    add('torso', 'rectangle', X(0), Y(-290), 136, 190, V['tunik'], 48); joint('torso', 0, 76, X(0), Y(-214))
-    add('tunik-rumbai', 'rectangle', X(0), Y(-205), 150, 40, V['tunik2'], 18); joint('tunik-rumbai', 0, 0, X(0), Y(-205))
-    add('leher', 'rectangle', X(0), Y(-388), 34, 40, V['kulit'], 12); joint('leher', 0, 0, X(0), Y(-388))
-    # ---- kepala ----
-    nk = (X(0), Y(-398))
-    add('kepala', 'ellipse', X(0), Y(-470), 150, 162, V['kulit']); joint('kepala', 0, 72, nk[0], nk[1])
-    add('telinga', 'ellipse', X(-70), Y(-468), 30, 40, V['kulit2']); joint('telinga', 0, 0, X(-70), Y(-468))
-    for k, (dx, dy, w, h) in enumerate([(-48, -540, 80, 70), (0, -556, 96, 74), (48, -540, 80, 70), (-66, -505, 40, 60), (66, -505, 40, 60)]):
-        add(f'rambut-{k+1}', 'ellipse', X(dx), Y(dy), w, h, V['rambut']); joint(f'rambut-{k+1}', 0, 0, X(dx), Y(dy))
-    if V['janggut']:
-        add('janggut', 'ellipse', X(0), Y(-408), 118, 70, V['rambut']); joint('janggut', 0, 0, X(0), Y(-408))
-    for side, dx in (('L', -28), ('R', 28)):
-        add(f'mata-{side}', 'ellipse', X(dx), Y(-472), 16, 20, '#23201C'); joint(f'mata-{side}', 0, 0, X(dx), Y(-472))
-        add(f'alis-{side}', 'rectangle', X(dx), Y(-500), 30, 8, V['rambut'], 4); joint(f'alis-{side}', 0, 0, X(dx), Y(-500))
-    add('hidung', 'ellipse', X(4), Y(-450), 26, 22, V['kulit2']); joint('hidung', 0, 0, X(4), Y(-450))
-    add('mulut', 'rectangle', X(2), Y(-422), 34, 9, '#5A2E24', 5); joint('mulut', 0, 0, X(2), Y(-422))
-    # ---- lengan depan (L) ----
-    sh_l = (X(-52), Y(-340)); el_l = (X(-52), Y(-262)); wr_l = (X(-52), Y(-190))
-    add('tangan-L', 'ellipse', wr_l[0], wr_l[1] + 8 * s, 34, 40, V['kulit']); joint('tangan-L', 0, -8, wr_l[0], wr_l[1])
-    add('lenganbawah-L', 'rectangle', el_l[0], el_l[1] + 36 * s, 30, 86, V['kulit'], 15); joint('lenganbawah-L', 0, -36, el_l[0], el_l[1])
-    add('lengan-L', 'rectangle', sh_l[0], sh_l[1] + 38 * s, 34, 96, V['tunik'], 17); joint('lengan-L', 0, -38, sh_l[0], sh_l[1])
-    # ---- parenting (anak dulu, lalu induk ke induk) ----
-    order += [('tangan-R', 'lenganbawah-R'), ('lenganbawah-R', 'lengan-R'), ('lengan-R', 'torso'),
-              ('tangan-L', 'lenganbawah-L'), ('lenganbawah-L', 'lengan-L'), ('lengan-L', 'torso'),
-              ('tunik-rumbai', 'torso'), ('leher', 'torso'), ('kepala', 'torso'), ('telinga', 'kepala'), ('hidung', 'kepala'), ('mulut', 'kepala')]
-    order += [(f'rambut-{k+1}', 'kepala') for k in range(5)] + [(f'mata-{sd}', 'kepala') for sd in 'LR'] + [(f'alis-{sd}', 'kepala') for sd in 'LR']
-    if V['janggut']: order.append(('janggut', 'kepala'))
-    order.append(('torso', 'ROOT'))
-    for c_, p_ in order: parent(c_, p_)
-    return ops
 
-if __name__ == '__main__':
-    comp, p, x, gy, s = sys.argv[1], sys.argv[2], float(sys.argv[3]), float(sys.argv[4]), float(sys.argv[5])
-    var = sys.argv[6] if len(sys.argv) > 6 else 'utama'
-    ops = rig(comp, p, x, gy, s, var)
-    print(json.dumps(ops, separators=(',', ':')))
-    print(len(ops), 'ops', file=sys.stderr)
+def rgb_object(hex_color: str) -> dict[str, float]:
+    """Convert a hex color into the normalized RGB object expected by AE."""
+    color = hex_color.removeprefix("#")
+    return {
+        channel: round(int(color[index : index + 2], 16) / 255, 3)
+        for channel, index in (("r", 0), ("g", 2), ("b", 4))
+    }
+
+
+def build_character_rig(
+    composition: str,
+    prefix: str,
+    x: float,
+    ground_y: float,
+    scale: float,
+    variant_name: str = "main",
+) -> list[dict[str, Any]]:
+    """Build the ordered AE operation list for one character rig."""
+    variant_name = LEGACY_VARIANTS.get(variant_name, variant_name)
+    if variant_name not in CHARACTER_VARIANTS:
+        raise ValueError(f"Unknown character variant: {variant_name}")
+    colors = CHARACTER_VARIANTS[variant_name]
+    operations: list[dict[str, Any]] = []
+
+    def x_at(offset: float) -> float:
+        return x + offset * scale
+
+    def y_at(offset: float) -> float:
+        """Negative offsets move upward from the character's feet."""
+        return ground_y + offset * scale
+
+    def add_layer(
+        name: str,
+        shape: str,
+        center_x: float,
+        center_y: float,
+        width: float,
+        height: float,
+        color: str,
+        roundness: float = 0,
+    ) -> None:
+        layer = {
+            "compositionName": composition,
+            "name": f"{prefix} {name}",
+            "shapeType": shape,
+            "size": [round(width * scale, 1), round(height * scale, 1)],
+            "position": [round(center_x, 1), round(center_y, 1)],
+            "fillColor": rgb_object(color),
+        }
+        if shape == "rectangle" and roundness:
+            layer["roundness"] = round(roundness * scale, 1)
+        operations.append({"tool": "add_shape_layer", "input": layer})
+
+    def set_joint(name: str, anchor_x: float, anchor_y: float, joint_x: float, joint_y: float) -> None:
+        """Set the layer anchor relative to its shape and its comp position."""
+        operations.append(
+            {
+                "tool": "modify_layer",
+                "input": {
+                    "compositionName": composition,
+                    "layerName": f"{prefix} {name}",
+                    "anchorPoint": [round(anchor_x * scale, 1), round(anchor_y * scale, 1)],
+                    "position": [round(joint_x, 1), round(joint_y, 1)],
+                },
+            }
+        )
+
+    def parent_layer(child: str, parent: str) -> None:
+        operations.append(
+            {
+                "tool": "modify_layer",
+                "input": {
+                    "compositionName": composition,
+                    "layerName": f"{prefix} {child}",
+                    "parentLayerName": f"{prefix} {parent}",
+                },
+            }
+        )
+
+    pelvis = (x_at(0), y_at(-214))
+    operations.extend(
+        [
+            {"tool": "add_null_layer", "input": {"compositionName": composition, "name": f"{prefix} ROOT"}},
+            {
+                "tool": "modify_layer",
+                "input": {
+                    "compositionName": composition,
+                    "layerName": f"{prefix} ROOT",
+                    "anchorPoint": [50, 50],
+                    "position": [round(pelvis[0], 1), round(pelvis[1], 1)],
+                },
+            },
+        ]
+    )
+
+    parenting: list[tuple[str, str]] = []
+
+    # Build the rear leg first so the front leg remains visually on top.
+    for side, offset_x, shade in (("R", 24, "skin_shadow"), ("L", -24, "skin")):
+        hip = (x_at(offset_x), y_at(-214))
+        knee = (x_at(offset_x), y_at(-112))
+        ankle = (x_at(offset_x), y_at(-16))
+
+        add_layer(f"kaki-{side}", "rectangle", ankle[0] + 12 * scale, ankle[1] + 6 * scale, 64, 26, "#5A3E2B", 12)
+        set_joint(f"kaki-{side}", -12, -6, ankle[0], ankle[1])
+        add_layer(f"betis-{side}", "rectangle", knee[0], knee[1] + 50 * scale, 38, 110, colors[shade], 18)
+        set_joint(f"betis-{side}", 0, -50, knee[0], knee[1])
+        add_layer(f"paha-{side}", "rectangle", hip[0], hip[1] + 52 * scale, 46, 118, colors[shade], 22)
+        set_joint(f"paha-{side}", 0, -52, hip[0], hip[1])
+        parenting.extend(
+            [(f"kaki-{side}", f"betis-{side}"), (f"betis-{side}", f"paha-{side}"), (f"paha-{side}", "ROOT")]
+        )
+
+    # Rear arm.
+    shoulder = (x_at(52), y_at(-340))
+    elbow = (x_at(52), y_at(-262))
+    wrist = (x_at(52), y_at(-190))
+    add_layer("tangan-R", "ellipse", wrist[0], wrist[1] + 8 * scale, 34, 40, colors["skin_shadow"])
+    set_joint("tangan-R", 0, -8, wrist[0], wrist[1])
+    add_layer("lenganbawah-R", "rectangle", elbow[0], elbow[1] + 36 * scale, 30, 86, colors["skin_shadow"], 15)
+    set_joint("lenganbawah-R", 0, -36, elbow[0], elbow[1])
+    add_layer("lengan-R", "rectangle", shoulder[0], shoulder[1] + 38 * scale, 34, 96, colors["skin_shadow"], 17)
+    set_joint("lengan-R", 0, -38, shoulder[0], shoulder[1])
+
+    # Torso and head.
+    add_layer("torso", "rectangle", x_at(0), y_at(-290), 136, 190, colors["tunic"], 48)
+    set_joint("torso", 0, 76, x_at(0), y_at(-214))
+    add_layer("tunik-rumbai", "rectangle", x_at(0), y_at(-205), 150, 40, colors["tunic_shadow"], 18)
+    set_joint("tunik-rumbai", 0, 0, x_at(0), y_at(-205))
+    add_layer("leher", "rectangle", x_at(0), y_at(-388), 34, 40, colors["skin"], 12)
+    set_joint("leher", 0, 0, x_at(0), y_at(-388))
+
+    neck = (x_at(0), y_at(-398))
+    add_layer("kepala", "ellipse", x_at(0), y_at(-470), 150, 162, colors["skin"])
+    set_joint("kepala", 0, 72, neck[0], neck[1])
+    add_layer("telinga", "ellipse", x_at(-70), y_at(-468), 30, 40, colors["skin_shadow"])
+    set_joint("telinga", 0, 0, x_at(-70), y_at(-468))
+
+    hair_positions = [(-48, -540, 80, 70), (0, -556, 96, 74), (48, -540, 80, 70), (-66, -505, 40, 60), (66, -505, 40, 60)]
+    for index, (offset_x, offset_y, width, height) in enumerate(hair_positions, start=1):
+        layer_name = f"rambut-{index}"
+        add_layer(layer_name, "ellipse", x_at(offset_x), y_at(offset_y), width, height, colors["hair"])
+        set_joint(layer_name, 0, 0, x_at(offset_x), y_at(offset_y))
+
+    if colors["beard"]:
+        add_layer("janggut", "ellipse", x_at(0), y_at(-408), 118, 70, colors["hair"])
+        set_joint("janggut", 0, 0, x_at(0), y_at(-408))
+
+    for side, offset_x in (("L", -28), ("R", 28)):
+        add_layer(f"mata-{side}", "ellipse", x_at(offset_x), y_at(-472), 16, 20, "#23201C")
+        set_joint(f"mata-{side}", 0, 0, x_at(offset_x), y_at(-472))
+        add_layer(f"alis-{side}", "rectangle", x_at(offset_x), y_at(-500), 30, 8, colors["hair"], 4)
+        set_joint(f"alis-{side}", 0, 0, x_at(offset_x), y_at(-500))
+
+    add_layer("hidung", "ellipse", x_at(4), y_at(-450), 26, 22, colors["skin_shadow"])
+    set_joint("hidung", 0, 0, x_at(4), y_at(-450))
+    add_layer("mulut", "rectangle", x_at(2), y_at(-422), 34, 9, "#5A2E24", 5)
+    set_joint("mulut", 0, 0, x_at(2), y_at(-422))
+
+    # Front arm.
+    shoulder = (x_at(-52), y_at(-340))
+    elbow = (x_at(-52), y_at(-262))
+    wrist = (x_at(-52), y_at(-190))
+    add_layer("tangan-L", "ellipse", wrist[0], wrist[1] + 8 * scale, 34, 40, colors["skin"])
+    set_joint("tangan-L", 0, -8, wrist[0], wrist[1])
+    add_layer("lenganbawah-L", "rectangle", elbow[0], elbow[1] + 36 * scale, 30, 86, colors["skin"], 15)
+    set_joint("lenganbawah-L", 0, -36, elbow[0], elbow[1])
+    add_layer("lengan-L", "rectangle", shoulder[0], shoulder[1] + 38 * scale, 34, 96, colors["tunic"], 17)
+    set_joint("lengan-L", 0, -38, shoulder[0], shoulder[1])
+
+    parenting.extend(
+        [
+            ("tangan-R", "lenganbawah-R"), ("lenganbawah-R", "lengan-R"), ("lengan-R", "torso"),
+            ("tangan-L", "lenganbawah-L"), ("lenganbawah-L", "lengan-L"), ("lengan-L", "torso"),
+            ("tunik-rumbai", "torso"), ("leher", "torso"), ("kepala", "torso"),
+            ("telinga", "kepala"), ("hidung", "kepala"), ("mulut", "kepala"),
+        ]
+    )
+    parenting.extend((f"rambut-{index}", "kepala") for index in range(1, 6))
+    parenting.extend((f"mata-{side}", "kepala") for side in "LR")
+    parenting.extend((f"alis-{side}", "kepala") for side in "LR")
+    if colors["beard"]:
+        parenting.append(("janggut", "kepala"))
+    parenting.append(("torso", "ROOT"))
+
+    for child, parent in parenting:
+        parent_layer(child, parent)
+    return operations
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("composition", help="After Effects composition name")
+    parser.add_argument("prefix", help="prefix used for all generated layer names")
+    parser.add_argument("x", type=float, help="character center in composition pixels")
+    parser.add_argument("ground_y", type=float, help="ground position in composition pixels")
+    parser.add_argument("scale", type=float, help="character scale, where 1.0 is 100%%")
+    parser.add_argument(
+        "variant",
+        nargs="?",
+        default="main",
+        choices=tuple(CHARACTER_VARIANTS) + tuple(LEGACY_VARIANTS),
+        help="character color variant (default: main)",
+    )
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    operations = build_character_rig(
+        args.composition,
+        args.prefix,
+        args.x,
+        args.ground_y,
+        args.scale,
+        args.variant,
+    )
+    print(json.dumps(operations, separators=(",", ":")))
+    print(f"{len(operations)} operations", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()

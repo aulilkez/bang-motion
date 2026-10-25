@@ -1,24 +1,47 @@
-"""Server statis tanpa cache.
+"""Serve the current directory on localhost without browser caching.
 
-http.server bawaan membiarkan browser menyimpan modul JS pakai heuristik,
-jadi edit timeline/scene kadang tidak terlihat setelah reload biasa.
-Cache-Control: no-store memaksa browser mengambil berkas segar setiap kali.
+Usage:
+    python scripts/utilities/serve.py [port]
 
-Pakai:  python tools/serve.py   (port 5178)
+The default port is 5178. Run the command from the directory you want to serve.
 """
-import sys
+
+from __future__ import annotations
+
+import argparse
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
-PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 5178
 
-class NoCacheHandler(SimpleHTTPRequestHandler):
-    def end_headers(self):
-        self.send_header('Cache-Control', 'no-store')
+class NoCacheRequestHandler(SimpleHTTPRequestHandler):
+    """Static file handler that forces the browser to fetch fresh files."""
+
+    def end_headers(self) -> None:
+        self.send_header("Cache-Control", "no-store")
         super().end_headers()
 
-    def log_message(self, *args):
-        pass  # senyap; log request tidak berguna di sini
+    def log_message(self, format: str, *args: object) -> None:
+        # Request logs add noise during local design iteration.
+        return
 
-if __name__ == '__main__':
-    print(f'serving on http://127.0.0.1:{PORT} (no-store)')
-    ThreadingHTTPServer(('127.0.0.1', PORT), NoCacheHandler).serve_forever()
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("port", nargs="?", type=int, default=5178)
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    address = ("127.0.0.1", args.port)
+    server = ThreadingHTTPServer(address, NoCacheRequestHandler)
+    print(f"Serving http://{address[0]}:{address[1]} (cache disabled)")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nStopping server.")
+    finally:
+        server.server_close()
+
+
+if __name__ == "__main__":
+    main()

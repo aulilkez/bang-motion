@@ -1,81 +1,278 @@
+"""Create expression and blink variants from transparent cartoon-head PNGs.
+
+The input style should use two solid dark eyes and a simple line mouth. The
+script detects those features, redraws the mouth for three expressions, and
+creates a blink variant for each expression. No image generation is needed.
+
+Usage:
+    python head-expressions.py character/head-person.png character/head-woman.png
+
+Generated files are written beside each input. The shared metadata file is
+written beside the first input. Output names retain the existing Indonesian
+expression labels used by the cartoon-stage starter.
+
+Dependencies: Pillow, NumPy, and OpenCV (opencv-python).
 """
-Ekspresi & kedip untuk kepala kartun hasil generate — dibuat LOKAL, tanpa generate ulang.
 
-Masukan : PNG kepala (latar transparan) gaya flat: dua titik mata hitam, mulut garis.
-Keluaran: <nama>-senang.png, -cemas.png, -kaget.png, masing-masing + varian -kedip.png,
-          dan kepala-meta.json (bbox kepala, posisi pupil, kotak mulut, warna kulit).
+from __future__ import annotations
 
-Cara:
-  python head-expressions.py karakter/kepala-pria.png karakter/kepala-wanita.png
-  (nama keluaran diambil dari nama berkas setelah "kepala-", atau nama berkasnya)
-
-Deteksi: komponen gelap (max RGB < 90, alpha > 180) → dua komponen kecil hampir persegi di
-tengah wajah = pupil; komponen lebar-tipis di bawah pupil = mulut. Warna kulit disampel di
-antara mata dan mulut. Kedip = elips kulit menutup pupil + garis lengkung. Cemas = mulut
-cekung. Kaget = lingkaran. Semua ukuran relatif ke ukuran pupil/mulut yang terdeteksi.
-Butuh: Pillow, numpy, opencv-python.
-"""
-import sys, json, os
+import argparse
+import json
 from pathlib import Path
+from typing import Any
+
+import cv2
+import numpy as np
 from PIL import Image, ImageDraw
-import numpy as np, cv2
 
 INK = (35, 32, 28, 255)
+FALLBACK_SKIN = (200, 140, 100, 255)
+DARK_PIXEL_THRESHOLD = 90
+ALPHA_THRESHOLD = 180
+MIN_COMPONENT_AREA = 60
+EXPRESSIONS = ("senang", "cemas", "kaget")
 
-def bez(d, p, color, width):
-    pts = []
-    for t in np.linspace(0, 1, 50):
-        q = (1-t)**3*np.array(p[0]) + 3*(1-t)**2*t*np.array(p[1]) + 3*(1-t)*t*t*np.array(p[2]) + t**3*np.array(p[3])
-        pts.append(tuple(q))
-    d.line(pts, fill=color, width=width, joint='curve')
 
-def process(path):
-    path = Path(path)
-    name = path.stem[len('kepala-'):] if path.stem.startswith('kepala-') else path.stem
-    im = Image.open(path).convert('RGBA'); px = np.array(im); H, W = px.shape[:2]
-    alpha = px[:, :, 3]; ys, xs = np.where(alpha > 10)
-    bbox = [int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())]
-    dark = ((px[:, :, :3].max(2) < 90) & (alpha > 180)).astype('uint8')
-    n, lab, st, cen = cv2.connectedComponentsWithStats(dark)
-    comps = [(i, st[i], cen[i]) for i in range(1, n) if st[i, 4] > 60]
-    eyes = [c for c in comps if 12 < c[1][2] < 80 and 12 < c[1][3] < 80
-            and abs(c[1][2]-c[1][3]) < c[1][2]*.5 and H*.35 < c[2][1] < H*.75]
-    eyes = sorted(sorted(eyes, key=lambda c: c[1][4], reverse=True)[:2], key=lambda c: c[2][0])
-    assert len(eyes) == 2, f'{name}: pupil tidak terdeteksi 2 buah — cek gaya kepalanya (dua titik mata solid)'
-    ey = float(np.mean([c[2][1] for c in eyes])); ex = float(np.mean([c[2][0] for c in eyes]))
-    mouth = [c for c in comps if c[2][1] > ey+20 and c[1][2] > c[1][3]*1.6 and c[1][2] < W*.4]
-    assert mouth, f'{name}: mulut tidak terdeteksi'
-    mx0, my0, mw, mh = [int(v) for v in sorted(mouth, key=lambda c: c[1][4], reverse=True)[0][1][:4]]
-    sy, sx = int((ey+my0)/2), int(ex); skin = tuple(int(v) for v in px[sy, sx])
-    if skin[3] < 200: skin = (200, 140, 100, 255)
-    meta = {'size': [W, H], 'bbox': bbox,
-            'eyes': [[float(c[2][0]), float(c[2][1]), int(max(c[1][2], c[1][3]))] for c in eyes],
-            'mouth': [mx0, my0, mw, mh], 'skin': list(skin[:3])}
-    out_dir = path.parent
-    for expr in ['senang', 'cemas', 'kaget']:
-        for blink in [False, True]:
-            out = im.copy(); d = ImageDraw.Draw(out)
-            if blink:
-                for cx, cy, sz in meta['eyes']:
-                    r = sz*.75; d.ellipse((cx-r, cy-r, cx+r, cy+r), fill=skin)
-                    bez(d, [(cx-sz*.9, cy), (cx-sz*.35, cy+sz*.45), (cx+sz*.35, cy+sz*.45), (cx+sz*.9, cy)], INK, max(4, int(sz*.28)))
-            if expr != 'senang':
-                pad = int(mh*.9); d.rectangle((mx0-pad, my0-pad, mx0+mw+pad, my0+mh+pad), fill=skin)
-                cx, cy, w = mx0+mw/2, my0+mh/2, max(4, int(mh*.9))
-                if expr == 'cemas':
-                    bez(d, [(cx-mw*.45, cy+mh*.4), (cx-mw*.15, cy-mh*.9), (cx+mw*.15, cy-mh*.9), (cx+mw*.45, cy+mh*.4)], INK, w)
-                else:
-                    rr = mh*1.1; d.ellipse((cx-rr*.8, cy-rr, cx+rr*.8, cy+rr), fill=INK)
-            out.save(out_dir / f'{name}-{expr}{"-kedip" if blink else ""}.png')
-    return name, meta
+def draw_bezier(
+    draw: ImageDraw.ImageDraw,
+    points: list[tuple[float, float]],
+    color: tuple[int, int, int, int],
+    width: int,
+) -> None:
+    """Draw a cubic Bezier curve using sampled points."""
+    p0, p1, p2, p3 = (np.asarray(point, dtype=float) for point in points)
+    samples = np.linspace(0.0, 1.0, 50)
+    curve = []
+    for t in samples:
+        point = (
+            (1 - t) ** 3 * p0
+            + 3 * (1 - t) ** 2 * t * p1
+            + 3 * (1 - t) * t**2 * p2
+            + t**3 * p3
+        )
+        curve.append(tuple(point))
+    draw.line(curve, fill=color, width=width, joint="curve")
 
-if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print(__doc__); sys.exit(1)
-    metas = {}
-    for f in sys.argv[1:]:
-        name, meta = process(f); metas[name] = meta; print(name, 'bbox', meta['bbox'], 'pupil', [e[:2] for e in meta['eyes']])
-    out = Path(sys.argv[1]).parent / 'kepala-meta.json'
-    old = json.load(open(out)) if out.exists() else {}
-    old.update(metas); json.dump(old, open(out, 'w'), indent=1)
-    print('->', out)
+
+def output_name(image_path: Path) -> str:
+    """Remove the optional ``head-`` prefix from an input filename."""
+    prefix = "head-"
+    return image_path.stem[len(prefix) :] if image_path.stem.startswith(prefix) else image_path.stem
+
+
+def detect_features(image: Image.Image, name: str) -> dict[str, Any]:
+    """Detect the head bounds, two eyes, mouth, and a nearby skin color."""
+    pixels = np.asarray(image)
+    height, width = pixels.shape[:2]
+    alpha = pixels[:, :, 3]
+
+    visible_y, visible_x = np.where(alpha > 10)
+    if visible_x.size == 0:
+        raise ValueError(f"{name}: image is fully transparent")
+
+    bbox = [
+        int(visible_x.min()),
+        int(visible_y.min()),
+        int(visible_x.max()),
+        int(visible_y.max()),
+    ]
+    dark = (
+        (pixels[:, :, :3].max(axis=2) < DARK_PIXEL_THRESHOLD)
+        & (alpha > ALPHA_THRESHOLD)
+    ).astype(np.uint8)
+    count, _, stats, centers = cv2.connectedComponentsWithStats(dark)
+    components = [
+        (stats[index], centers[index])
+        for index in range(1, count)
+        if stats[index, cv2.CC_STAT_AREA] > MIN_COMPONENT_AREA
+    ]
+
+    eyes = [
+        component
+        for component in components
+        if 12 < component[0][cv2.CC_STAT_WIDTH] < 80
+        and 12 < component[0][cv2.CC_STAT_HEIGHT] < 80
+        and abs(
+            component[0][cv2.CC_STAT_WIDTH]
+            - component[0][cv2.CC_STAT_HEIGHT]
+        )
+        < component[0][cv2.CC_STAT_WIDTH] * 0.5
+        and height * 0.35 < component[1][1] < height * 0.75
+    ]
+    eyes = sorted(
+        sorted(eyes, key=lambda item: item[0][cv2.CC_STAT_AREA], reverse=True)[:2],
+        key=lambda item: item[1][0],
+    )
+    if len(eyes) != 2:
+        raise ValueError(
+            f"{name}: could not detect two pupils; use two solid dark eye dots"
+        )
+
+    eye_y = float(np.mean([eye[1][1] for eye in eyes]))
+    eye_x = float(np.mean([eye[1][0] for eye in eyes]))
+    mouths = [
+        component
+        for component in components
+        if component[1][1] > eye_y + 20
+        and component[0][cv2.CC_STAT_WIDTH]
+        > component[0][cv2.CC_STAT_HEIGHT] * 1.6
+        and component[0][cv2.CC_STAT_WIDTH] < width * 0.4
+    ]
+    if not mouths:
+        raise ValueError(f"{name}: could not detect the mouth")
+
+    mouth_stats, _ = max(mouths, key=lambda item: item[0][cv2.CC_STAT_AREA])
+    mouth_x = int(mouth_stats[cv2.CC_STAT_LEFT])
+    mouth_y = int(mouth_stats[cv2.CC_STAT_TOP])
+    mouth_width = int(mouth_stats[cv2.CC_STAT_WIDTH])
+    mouth_height = int(mouth_stats[cv2.CC_STAT_HEIGHT])
+
+    sample_y = int((eye_y + mouth_y) / 2)
+    sample_x = int(eye_x)
+    skin = tuple(int(channel) for channel in pixels[sample_y, sample_x])
+    if skin[3] < 200:
+        skin = FALLBACK_SKIN
+
+    return {
+        "size": [width, height],
+        "bbox": bbox,
+        "eyes": [
+            [
+                float(center[0]),
+                float(center[1]),
+                int(max(stats[cv2.CC_STAT_WIDTH], stats[cv2.CC_STAT_HEIGHT])),
+            ]
+            for stats, center in eyes
+        ],
+        "mouth": [mouth_x, mouth_y, mouth_width, mouth_height],
+        "skin": list(skin[:3]),
+    }
+
+
+def redraw_expression(
+    image: Image.Image,
+    metadata: dict[str, Any],
+    expression: str,
+    blink: bool,
+) -> Image.Image:
+    """Return a copy of the input with the requested face variant."""
+    result = image.copy()
+    draw = ImageDraw.Draw(result)
+    skin = (*metadata["skin"], 255)
+    mouth_x, mouth_y, mouth_width, mouth_height = metadata["mouth"]
+
+    if blink:
+        for eye_x, eye_y, eye_size in metadata["eyes"]:
+            radius = eye_size * 0.75
+            draw.ellipse(
+                (eye_x - radius, eye_y - radius, eye_x + radius, eye_y + radius),
+                fill=skin,
+            )
+            draw_bezier(
+                draw,
+                [
+                    (eye_x - eye_size * 0.9, eye_y),
+                    (eye_x - eye_size * 0.35, eye_y + eye_size * 0.45),
+                    (eye_x + eye_size * 0.35, eye_y + eye_size * 0.45),
+                    (eye_x + eye_size * 0.9, eye_y),
+                ],
+                INK,
+                max(4, int(eye_size * 0.28)),
+            )
+
+    if expression != "senang":
+        padding = int(mouth_height * 0.9)
+        draw.rectangle(
+            (
+                mouth_x - padding,
+                mouth_y - padding,
+                mouth_x + mouth_width + padding,
+                mouth_y + mouth_height + padding,
+            ),
+            fill=skin,
+        )
+        center_x = mouth_x + mouth_width / 2
+        center_y = mouth_y + mouth_height / 2
+        line_width = max(4, int(mouth_height * 0.9))
+
+        if expression == "cemas":
+            draw_bezier(
+                draw,
+                [
+                    (center_x - mouth_width * 0.45, center_y + mouth_height * 0.4),
+                    (center_x - mouth_width * 0.15, center_y - mouth_height * 0.9),
+                    (center_x + mouth_width * 0.15, center_y - mouth_height * 0.9),
+                    (center_x + mouth_width * 0.45, center_y + mouth_height * 0.4),
+                ],
+                INK,
+                line_width,
+            )
+        else:
+            radius = mouth_height * 1.1
+            draw.ellipse(
+                (
+                    center_x - radius * 0.8,
+                    center_y - radius,
+                    center_x + radius * 0.8,
+                    center_y + radius,
+                ),
+                fill=INK,
+            )
+
+    return result
+
+
+def process_image(image_path: Path) -> tuple[str, dict[str, Any]]:
+    """Generate all expression variants for one input image."""
+    name = output_name(image_path)
+    with Image.open(image_path) as source:
+        image = source.convert("RGBA")
+
+    metadata = detect_features(image, name)
+    for expression in EXPRESSIONS:
+        for blink in (False, True):
+            variant = redraw_expression(image, metadata, expression, blink)
+            suffix = f"-{expression}{'-kedip' if blink else ''}.png"
+            variant.save(image_path.parent / f"{name}{suffix}")
+
+    return name, metadata
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "images",
+        nargs="+",
+        type=Path,
+        help="transparent PNG head images to process",
+    )
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    metadata_by_name = {}
+
+    for image_path in args.images:
+        if not image_path.is_file():
+            raise FileNotFoundError(f"Input image does not exist: {image_path}")
+        name, metadata = process_image(image_path)
+        metadata_by_name[name] = metadata
+        pupils = [eye[:2] for eye in metadata["eyes"]]
+        print(f"{name}: bbox={metadata['bbox']}, pupils={pupils}")
+
+    metadata_path = args.images[0].parent / "kepala-meta.json"
+    existing_metadata = {}
+    if metadata_path.exists():
+        with metadata_path.open(encoding="utf-8") as metadata_file:
+            existing_metadata = json.load(metadata_file)
+
+    existing_metadata.update(metadata_by_name)
+    with metadata_path.open("w", encoding="utf-8") as metadata_file:
+        json.dump(existing_metadata, metadata_file, indent=2, ensure_ascii=False)
+        metadata_file.write("\n")
+    print(f"Metadata written to {metadata_path}")
+
+
+if __name__ == "__main__":
+    main()
