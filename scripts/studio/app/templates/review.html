@@ -28,7 +28,7 @@
         {% else %}
           <div class="flex flex-wrap items-center justify-between gap-3"><p class="text-sm text-muted-foreground">Edit scene cards, reorder them, or use the full JSON editor. Saving recalculates scene timing in order.</p><button class="btn btn-outline btn-sm" type="button" data-add-scene {% if not can_add_scene %}disabled{% endif %}>＋ Add scene</button></div>
           {% if content and content.scenes %}<div class="space-y-3" id="scene-cards" data-scene-cards data-duration="{{ project.brief.durationSeconds }}">
-            {% for scene in content.scenes %}{% include "partials/scene_card.html" %}{% endfor %}
+            {% for scene in content.scenes %}{% set scene_index = loop.index %}{% set scene_first = loop.first %}{% set scene_last = loop.last %}{% include "partials/scene_card.html" with context %}{% endfor %}
           </div>{% endif %}
         {% endif %}
         <form action="/studio/projects/{{ project.id }}/{{ kind }}/save" method="post" hx-post="/studio/projects/{{ project.id }}/{{ kind }}/save" hx-target="#flash-stack" hx-swap="innerHTML" data-content-form {% if kind == 'storyboard' %}data-storyboard-form{% endif %}>
