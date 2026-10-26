@@ -76,7 +76,7 @@ tambah Scale 100→111 dan 111→100 di waktu yang sama supaya tepi comp tidak t
    fungsi menggambar (rect/ellipse/path halus) di koordinat lokal dengan pivot yang
    ditentukan; skrip menulis SVG + `manifest.json` berisi `png, pos, anchor(px 2×),
    scale 50`. Render semua dengan `node scripts/ae/bridge/svg2png.cjs <folder>`
-   (puppeteer, PNG transparan seukuran SVG 2×). Gambar sesuai zona kamera: yang di
+   (Playwright, PNG transparan seukuran SVG 2×). Gambar sesuai zona kamera: yang di
    luar zoom ≥1,08 tidak perlu digambar.
 3. **Per panggung, satu `ae_batch`** urut belakang → depan:
    `add_null_layer CAM` → `modify_layer` CAM anchor/pos 0 → `import_image` + `modify_layer`

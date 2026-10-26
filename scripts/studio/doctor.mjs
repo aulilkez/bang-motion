@@ -25,20 +25,17 @@ function commandExists(command, args = ["--version"]) {
   return !result.error && result.status === 0;
 }
 
-function chromeAvailable() {
-  const configured = process.env.PUPPETEER_EXECUTABLE_PATH;
-  if (configured && commandExists(configured, ["--version"])) return configured;
-  const candidates =
-    process.platform === "win32"
-      ? ["chrome", "chrome.exe", "msedge", "msedge.exe"]
-      : ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser"];
-  const locator = process.platform === "win32" ? "where" : "which";
-  for (const candidate of candidates) {
-    const result = spawnSync(locator, [candidate], { encoding: "utf8" });
-    const executable = result.stdout?.trim().split(/\r?\n/)[0];
-    if (result.status === 0 && executable && commandExists(executable, ["--version"]))
-      return executable;
-  }
+function playwrightBrowserAvailable() {
+  const configured = process.env.PLAYWRIGHT_EXECUTABLE_PATH;
+  if (configured) return commandExists(configured, ["--version"]) ? configured : null;
+  const playwrightBrowser = spawnSync(
+    process.execPath,
+    ["-e", "process.stdout.write(require('playwright').chromium.executablePath())"],
+    { cwd: path.join(root, "scripts"), encoding: "utf8" },
+  );
+  const browserPath = playwrightBrowser.stdout?.trim();
+  if (playwrightBrowser.status === 0 && browserPath && existsSync(browserPath))
+    return browserPath;
   return null;
 }
 
@@ -75,24 +72,25 @@ if (profile === "skill") {
     "FastAPI server with local persistent project storage",
   );
   add(
-    "Puppeteer / Chrome / FFmpeg",
+    "Playwright / Chromium / FFmpeg",
     "optional",
     "Install these only when capturing frames or exporting MP4",
     false,
   );
 } else if (profile === "render") {
   add("Node.js >= 22.12", nodeOk ? "ready" : "missing", `Found ${process.versions.node}`);
-  const puppeteerInstalled = await exists("scripts/node_modules/puppeteer/package.json");
+  const playwrightInstalled = await exists("scripts/node_modules/playwright/package.json");
   add(
-    "Puppeteer",
-    puppeteerInstalled ? "ready" : "missing",
-    puppeteerInstalled ? "Render package is installed" : "Run npm ci --prefix scripts",
+    "Playwright",
+    playwrightInstalled ? "ready" : "missing",
+    playwrightInstalled ? "Render package is installed" : "Run npm ci --prefix scripts",
   );
-  const chrome = chromeAvailable();
+  const browser = playwrightBrowserAvailable();
   add(
-    "Chrome / Chromium",
-    chrome ? "ready" : "missing",
-    chrome || "Install Chrome/Chromium or set PUPPETEER_EXECUTABLE_PATH",
+    "Playwright Chromium",
+    browser ? "ready" : "missing",
+    browser ||
+      "Run npx --prefix scripts playwright install chromium or set PLAYWRIGHT_EXECUTABLE_PATH",
   );
   add(
     "FFmpeg",

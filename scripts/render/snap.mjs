@@ -16,7 +16,7 @@
    The page must expose window.OPENER = { W, H, ready, seek(t) }.
    ?clean=1 disables autoplay and review controls.
    ========================================================= */
-import puppeteer from 'puppeteer';
+import { chromium } from 'playwright';
 import { pathToFileURL } from 'node:url';
 import { mkdir } from 'node:fs/promises';
 
@@ -24,11 +24,11 @@ const [outDir, ...times] = process.argv.slice(2);
 if (!outDir || !times.length) { console.log('Usage: node snap.mjs <output-folder> <seconds> [<seconds> ...]'); process.exit(1); }
 const URL = process.env.URL || pathToFileURL(process.cwd()).href + '/index.html?clean=1';
 await mkdir(outDir, { recursive: true });
-const browser = await puppeteer.launch({ headless: 'new', args: ['--enable-gpu', '--use-gl=angle', '--enable-webgl', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
+const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH, args: ['--enable-gpu', '--use-gl=angle', '--enable-webgl', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
 const page = await browser.newPage();
 page.on('pageerror', e => console.log('PAGEERROR', e.message));
-await page.goto(URL, { waitUntil: 'networkidle0' });
-await page.waitForFunction('window.OPENER && window.OPENER.ready && (!window.OPENER.clipsReady || window.OPENER.clipsReady())', { timeout: 60000 });
+await page.goto(URL, { waitUntil: 'networkidle' });
+await page.waitForFunction('window.OPENER && window.OPENER.ready && (!window.OPENER.clipsReady || window.OPENER.clipsReady())', undefined, { timeout: 60000 });
 const { W, H } = await page.evaluate(() => ({ W: window.OPENER.W || 1920, H: window.OPENER.H || 1080 }));
 await page.setViewport({ width: W, height: H, deviceScaleFactor: 1 });
 for (const ts of times) {

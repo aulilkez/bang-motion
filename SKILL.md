@@ -24,10 +24,11 @@ presentasi — patuhi sebelum menulis kode.
 Deliverable (`index.html`) hanya butuh browser modern + internet untuk CDN
 (GSAP, font). Python dan Node **opsional**, dipakai hanya untuk alat kerja:
 `scripts/utilities/serve.py` (server no-cache, cuma perlu bila memakai module lokal),
-Node.js 22.12+ dan Puppeteer (capture/export opsional). Untuk memasangnya di clone skill, jalankan
+Node.js 22.12+ dan Playwright (capture/export opsional). Untuk memasangnya di clone skill, jalankan
 `npm install --prefix <path-ke-bang-motion>/scripts` sekali. Snapshot memakai
 `scripts/render/snap.mjs`; ekspor frame memakai
 `scripts/render/export-frames.mjs` dan ffmpeg menggabungkan PNG menjadi MP4.
+Pasang browser Chromium dengan `npx --prefix <path-ke-bang-motion>/scripts playwright install chromium`.
 Kalau user tidak punya keduanya: (1) tetap bangun satu-berkas, buka lewat
 klik dua kali; (2) verifikasi visual lewat `?debug=1` (panel scrub) dan
 screenshot manual per detik kunci; (3) MP4 lewat rekam layar (OBS / rekam
@@ -395,7 +396,7 @@ revision notes instead of regenerating already completed stages.
 5. **Verifikasi VISUAL, bukan cuma "kode jalan".** Kamu tidak bisa menonton
    video; kamu hanya bisa melihat FRAME. Potret 6–20 detik kunci (awal
    tiap adegan, saat teks muncul, transisi) dengan `scripts/render/snap.mjs`
-   (puppeteer, buka `file://`, tanpa server), susun jadi lembar kontak, dan
+   (Playwright, buka `file://`, tanpa server), susun jadi lembar kontak, dan
    nilai seperti sutradara: teks kepotong? tumpang tindih? teks muncul
    sebelum kamera selesai? masih terasa slide? Perbaiki, potret lagi.
    JANGAN merender semua frame untuk mengecek — itu ribuan gambar dan bukan
@@ -568,7 +569,7 @@ dan buat layer dari belakang ke depan. Build 10 panggung ≈ 1 jam, 0 kredit.
 | `assets/starters/explainers/cartoon-stage.html` | EXPLAINER kartun panggung: sistem panggung + kamera per panggung, `J()` sendi, `character()` (kepala vektor atau raster), whoosh 96 px, contoh dua panggung |
 | `scripts/ae/bridge/head-expressions.py` | kepala hasil generate → varian senang/cemas/kaget + kedip, dibuat lokal (deteksi pupil & mulut) |
 | `references/ae-bridge-higgsfield.md` | BRIDGE: membangun kartun panggung langsung di AE lewat MCP Higgsfield — batas bridge, jebakan (null 960,540; parent ke CAM berkeyframe; reorder rusak), arsitektur CAM per panggung, rig native, relay contact sheet, penyerahan |
-| `scripts/ae/bridge/svg-assets.py`, `svg2png.cjs`, `character-rig.py` | BRIDGE: aset ilustrasi dari kode → SVG + manifest → PNG 2× (puppeteer); generator ±90 op `ae_batch` untuk satu karakter bersendi |
+| `scripts/ae/bridge/svg-assets.py`, `svg2png.cjs`, `character-rig.py` | BRIDGE: aset ilustrasi dari kode → SVG + manifest → PNG 2× (Playwright); generator ±90 op `ae_batch` untuk satu karakter bersendi |
 | `references/anti-slideshow.md` | sebelum mendesain adegan |
 | `references/opener-concepts.md` | OPENER/PROMO sebelum rundown: tiga kandidat konsep, menu 19 konsep (termasuk estafet benda, pamer sistem brand, klaim → cara → hasil, ekosistem UI hidup, pop flat berfoto, menembus bentuk bergradien, dan tur produk berselang klaim, semuanya diturunkan dari layanan/aset/produk brand), panduan layout-warna-ritme, panduan animasi UI untuk app/SaaS, panduan foto dalam opener (input user / generate via MCP), menu fitur, pembuka, penutup, transisi tanpa cut yang dibawa objek, sidik jari struktur — mencegah kerangka template |
 | `references/explainer.md` | bila yang diminta explainer/video penjelasan (kartun+VO, jurnalisme visual foto, katalog putih, sketsa vintage, atau aksi kontinu; default 16:9, 9:16 hanya bila diminta) |
@@ -582,6 +583,6 @@ dan buat layer dari belakang ke depan. Build 10 panggung ≈ 1 jam, 0 kredit.
 | `assets/starters/explainers/white-catalog.html` | EXPLAINER katalog putih: grid samar, cutout foto, Archivo Black + Caveat + Inter, highlighter kuning |
 | `assets/starters/explainers/vintage-sketch.html` | EXPLAINER sketsa vintage: kertas sepia (tekstur CSS), cutout ukiran multiply, Playfair + Garamond + Cinzel, karat & emas |
 | `scripts/utilities/serve.py` | dev server no-cache (opsional, butuh Python; hanya bila memakai module lokal) |
-| `scripts/render/snap.mjs` | VERIFIKASI: potret detik kunci → lembar kontak (opsional, butuh Node + puppeteer) |
+| `scripts/render/snap.mjs` | VERIFIKASI: potret detik kunci → lembar kontak (opsional, butuh Node + Playwright) |
 | `scripts/utilities/voiceover-pauses.html` | deteksi jeda VO di browser (pengganti ffmpeg silencedetect, tanpa instal) |
-| `scripts/render/export-frames.mjs` | EXPORT: render semua frame ke PNG; ffmpeg menggabungkannya menjadi MP4, hanya bila diminta (opsional, butuh Node + Puppeteer + ffmpeg) |
+| `scripts/render/export-frames.mjs` | EXPORT: render semua frame ke PNG; ffmpeg menggabungkannya menjadi MP4, hanya bila diminta (opsional, butuh Node + Playwright + ffmpeg) |

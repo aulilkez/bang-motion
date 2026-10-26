@@ -39,7 +39,7 @@ warna, brand, atau kalimat spesifik proyek asalnya.
 4. **Starter multi-file.** `assets/starters/openers/opener.html` sengaja satu berkas agar
    mudah disalin; sediakan juga versi terpecah (struktur di
    `architecture.md`) begitu ekosistem skill mendukung folder template.
-5. **Ekspor lebih mulus.** Alternatif puppeteer: `MediaRecorder` +
+5. **Ekspor lebih mulus.** Alternatif Playwright: `MediaRecorder` +
    `canvas.captureStream` (cepat, kualitas lebih rendah), atau WebCodecs
    `VideoEncoder` (terbaik, butuh kode lebih). Juga preset ffmpeg untuk
    vertikal 1080×1920 (ganti konstanta stage → semua resep tetap jalan).

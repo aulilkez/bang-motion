@@ -15,7 +15,7 @@ proyek/
 ├── js/main.js          perekat: fit stage, loop render, panel kontrol
 └── tools/
     ├── serve.py        dev server Cache-Control: no-store
-    └── export-frames.mjs  render frame-by-frame (puppeteer)
+    └── export-frames.mjs  render frame-by-frame (Playwright)
 ```
 
 Boleh dipadatkan jadi satu berkas (lihat `assets/starters/openers/opener.html`) untuk
@@ -136,7 +136,7 @@ memang wajib.
 Jangan merekam layar untuk hasil final (frame drop). Karena semuanya
 deterministik: set `tl.time(frame/fps)` → tunggu 2× rAF (satu untuk GSAP
 menulis style, satu untuk render loop menggambar) → screenshot → ulangi.
-`scripts/render/export-frames.mjs` melakukannya via puppeteer; gabungkan dengan:
+`scripts/render/export-frames.mjs` melakukannya via Playwright; gabungkan dengan:
 
 ```
 ffmpeg -framerate 60 -i frames/f%05d.png -c:v libx264 -pix_fmt yuv420p -crf 16 out.mp4
@@ -175,7 +175,7 @@ DISERAHKAN adalah satu `index.html` yang bisa diklik dua kali:
 - Aset lokal (ikon, gambar) cukup path relatif — `<img src="icon.png">`
   aman di `file://`.
 - Hindari `fetch()`/XHR ke berkas lokal — itu diblokir di `file://`.
-- Node/puppeteer hanya untuk render MP4; jangan sampai user mengira opener
+- Node/Playwright hanya untuk render MP4; jangan sampai user mengira opener
   butuh `node_modules`. Jelaskan itu di README. Tanpa Node: rekam layar
   (dengan catatan bisa drop frame). Tanpa Python: tidak ada yang hilang —
   server hanya perlu bila memakai module lokal, dan deliverable satu-berkas

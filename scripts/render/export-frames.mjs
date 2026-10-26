@@ -16,7 +16,7 @@
    This script creates PNG files only. ffmpeg creates the MP4.
    ========================================================= */
 
-import puppeteer from 'puppeteer';
+import { chromium } from 'playwright';
 import { mkdir, readdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 
@@ -61,17 +61,18 @@ async function prepareOutputDirectory(requestedPath, chooseFreshName) {
 
 const OUT = await prepareOutputDirectory(REQUESTED_OUT, process.env.OUT === undefined);
 
-const browser = await puppeteer.launch({
-  headless: 'new',
+const browser = await chromium.launch({
+  executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH,
   args: ['--enable-gpu', '--use-gl=angle', '--enable-webgl', '--ignore-gpu-blocklist'],
 });
 try {
   const page = await browser.newPage();
   await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: SCALE });
-  await page.goto(URL, { waitUntil: 'networkidle0' });
+  await page.goto(URL, { waitUntil: 'networkidle' });
 
   await page.waitForFunction(
     'window.OPENER && window.OPENER.ready && (!window.OPENER.clipsReady || window.OPENER.clipsReady())',
+    undefined,
     { timeout: 120000 },
   );
   await page.evaluate(() => document.fonts.ready);
@@ -100,7 +101,6 @@ try {
     await page.screenshot({
       path: `${OUT}/f${String(frame).padStart(5, '0')}.png`,
       clip: { x: 0, y: 0, width: 1920, height: 1080 },
-      optimizeForSpeed: true,
     });
 
     if (frame % FPS === 0) {

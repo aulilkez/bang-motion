@@ -82,9 +82,10 @@ npm ci --prefix scripts
 npm run doctor:render --prefix scripts
 ```
 
-Frame capture requires Puppeteer and Chrome/Chromium. FFmpeg is needed only
-to encode PNG frames as MP4. Set `PUPPETEER_EXECUTABLE_PATH` when Chrome is
-installed at a nonstandard location.
+Frame capture requires Playwright and its Chromium browser. Install Chromium
+with `npx --prefix scripts playwright install chromium` if needed. FFmpeg is
+needed only to encode PNG frames as MP4. Set `PLAYWRIGHT_EXECUTABLE_PATH` to
+use a browser installed at a nonstandard location.
 
 Automatic Indonesian voice generation with Pocket TTS is not currently part
 of this Studio setup. Studio's Python environment does not install model weights.

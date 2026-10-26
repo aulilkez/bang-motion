@@ -78,8 +78,9 @@ npm ci --prefix scripts
 npm run doctor:render --prefix scripts
 ```
 
-Frame capture needs Puppeteer and Chrome/Chromium. Set
-`PUPPETEER_EXECUTABLE_PATH` if Chrome is not detected automatically. MP4
+Frame capture needs Playwright and its Chromium browser. Install Chromium with
+`npx --prefix scripts playwright install chromium` if needed, or set
+`PLAYWRIGHT_EXECUTABLE_PATH` to use another browser executable. MP4
 encoding also needs FFmpeg. These tools are only needed for rendering and
 export; they are not required to use the Studio review UI.
 
